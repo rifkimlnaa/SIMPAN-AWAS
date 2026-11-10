@@ -1,0 +1,9 @@
+# Ganti nama file ini menjadi ".htaccess" lalu taruh langsung di folder htdocs (BUKAN di dalam public).
+# Fungsi: InfinityFree selalu memakai htdocs sebagai root, sedangkan Laravel butuh folder public.
+# Aturan ini membuat semua permintaan diarahkan ke public/, sehingga .env, app/, vendor/, dan
+# storage/ (termasuk berkas arsip privat) tidak bisa dibuka lewat web.
+# Urutan wajib: aturan storage dulu, baru aturan umum.
+
+RewriteEngine On
+RewriteRule ^storage/(.*)$ /storage/app/public/$1 [END]
+RewriteRule (.*) /public/$1 [L]

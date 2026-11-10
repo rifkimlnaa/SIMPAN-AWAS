@@ -1,0 +1,53 @@
+<?php
+
+return [
+    'array' => ':attribute tidak valid.',
+    'date_format' => ':attribute tidak sesuai format :format.',
+    'email' => ':attribute harus berupa alamat email yang valid.',
+    'in' => ':attribute yang dipilih tidak valid.',
+    'regex' => 'Format :attribute tidak valid.',
+    'alpha_dash' => ':attribute hanya boleh berisi huruf, angka, strip, dan garis bawah.',
+    'confirmed' => 'Konfirmasi :attribute tidak cocok.',
+    'current_password' => 'Password saat ini salah.',
+    'date' => ':attribute bukan tanggal yang valid.',
+    'different' => ':attribute dan :other harus berbeda.',
+    'exists' => ':attribute yang dipilih tidak valid.',
+    'file' => ':attribute harus berupa berkas.',
+    'integer' => ':attribute harus berupa angka bulat.',
+    'max' => [
+        'array' => ':attribute tidak boleh lebih dari :max item.',
+        'file' => 'Ukuran :attribute tidak boleh lebih dari :max kilobita.',
+        'numeric' => ':attribute tidak boleh lebih dari :max.',
+        'string' => ':attribute tidak boleh lebih dari :max karakter.',
+    ],
+    'mimes' => ':attribute harus berformat: :values.',
+    'min' => [
+        'array' => ':attribute minimal :min item.',
+        'file' => 'Ukuran :attribute minimal :min kilobita.',
+        'numeric' => ':attribute minimal :min.',
+        'string' => ':attribute minimal :min karakter.',
+    ],
+    'password' => [
+        'letters' => ':attribute harus mengandung setidaknya satu huruf.',
+        'mixed' => ':attribute harus mengandung huruf besar dan huruf kecil.',
+        'numbers' => ':attribute harus mengandung setidaknya satu angka.',
+        'symbols' => ':attribute harus mengandung setidaknya satu simbol.',
+        'uncompromised' => ':attribute pernah bocor di internet. Pilih :attribute yang lain.',
+    ],
+    'required' => ':attribute wajib diisi.',
+    'string' => ':attribute harus berupa teks.',
+    'unique' => ':attribute sudah dipakai.',
+    'uploaded' => ':attribute gagal diunggah. Periksa batas ukuran upload di server.',
+
+    'attributes' => [
+        'name' => 'nama',
+        'username' => 'username',
+        'password' => 'password',
+        'current_password' => 'password saat ini',
+        'nama' => 'nama kategori',
+        'keterangan' => 'keterangan',
+        'foto' => 'foto profil',
+        'file' => 'berkas arsip',
+        'kategori_id' => 'kategori',
+    ],
+];
