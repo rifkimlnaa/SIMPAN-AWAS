@@ -123,7 +123,7 @@
         max-width: 43rem;
         margin-top: 0;
         color: #fff;
-        font-size: clamp(2.55rem, 5.1vw, 4.65rem);
+        font-size: clamp(2.2rem, 3.8vw, 3.5rem);
         font-weight: 850;
         letter-spacing: -.055em;
         line-height: 1.04;
@@ -396,7 +396,7 @@
         .login-brand-lockup { margin-bottom: 1.2rem; }
         .login-brand-icon { width: 2.85rem; height: 2.85rem; }
         .login-brand-icon img { width: 2.1rem; height: 2.1rem; }
-        .login-hero-title { margin-top: .8rem; font-size: clamp(2rem, 9vw, 2.7rem); }
+        .login-hero-title { margin-top: .8rem; font-size: clamp(1.9rem, 8vw, 2.4rem); }
         .login-hero-copy { margin-top: .8rem; font-size: .86rem; line-height: 1.6; }
         .login-feature-grid { grid-template-columns: 1fr; gap: .55rem; margin-top: 1.1rem; }
         .login-feature { display: flex; align-items: center; gap: .75rem; padding: .7rem .8rem; text-align: left; }
@@ -439,7 +439,7 @@
 
             <h1 id="landing-heading" class="login-hero-title">KELOLA DATA PENANGANAN PELANGGARAN DAN PENYELESAIAN SENGKETA PROSES PEMILU <span>DALAM SATU SISTEM.</span></h1>
             <p class="login-hero-copy">
-                SIMPAN-AWAS membantu pengelolaan dokumen Penanganan Pelanggaran dan Penyelesaian Sengketa secara lebih tertata, terpusat, dan mudah ditelusuri.
+                SIMPAN-AWAS membantu pengelolaan dokumen Penanganan Pelanggaran dan Penyelesaian Sengketa proses Pemilu secara lebih tertata, terpusat, dan mudah ditelusuri.
             </p>
 
             <div class="login-feature-grid" aria-label="Fitur utama SIMPAN-AWAS">
