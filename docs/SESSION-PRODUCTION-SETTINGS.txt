@@ -1,0 +1,14 @@
+SESSION SETTINGS UNTUK .env PRODUCTION (HTTPS)
+
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://domain-anda
+SESSION_DRIVER=database
+SESSION_LIFETIME=60
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+
+Tambahkan/perbarui baris ini di .env yang sudah ada. Jangan mengganti APP_KEY atau
+kredensial database. Secure cookie memerlukan HTTPS aktif.
