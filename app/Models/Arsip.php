@@ -26,6 +26,7 @@ class Arsip extends Model
         return array_filter(
             static::semuaJenis(),
             fn (array $j) => ($j['kategori'] ?? null) === $kategoriJenis
+                && ($j['tampil'] ?? true) !== false
         );
     }
 
@@ -140,7 +141,19 @@ class Arsip extends Model
     /** Nama jenis arsip: "Formulir Laporan", "Tanda Terima Permohonan", dst. Kosong untuk arsip sederhana. */
     public function jenisNama(): string
     {
-        return $this->isSederhana() ? '' : (string) (static::definisi($this->jenis_arsip)['label'] ?? '');
+        if ($this->isSederhana()) {
+            return '';
+        }
+
+        $definisi = static::definisi($this->jenis_arsip);
+        $nama = (string) ($definisi['label'] ?? '');
+
+        // Bedakan Model A.1 dan B.1 saat arsip ditampilkan dalam daftar gabungan.
+        if ($this->jenis_arsip === 'formulir_laporan_a1') {
+            return $nama.' Model A.1';
+        }
+
+        return $nama;
     }
 
     /** Apakah arsip ini bisa dicetak sebagai formulir PDF (semua jenis kecuali sederhana). */
@@ -202,7 +215,7 @@ class Arsip extends Model
         $v = fn (?string $x) => $x ?: '—';
 
         return match ($this->jenis_arsip) {
-            'formulir_laporan' => 'Pelapor: '.$v($this->nama_pelapor).'; Terlapor: '.$v($this->nama_terlapor),
+            'formulir_laporan', 'formulir_laporan_a1' => 'Pelapor: '.$v($this->nama_pelapor).'; Terlapor: '.$v($this->nama_terlapor),
             'formulir_temuan' => 'Pengawas: '.$v($this->nama_pengawas).'; Terlapor: '.$v($this->nama_terlapor),
             'bukti_penyampaian', 'bukti_perbaikan' => 'Pelapor: '.$v($this->nama_pelapor),
             'tanda_terima' => 'Pemohon: '.$v($this->nama_pemohon),

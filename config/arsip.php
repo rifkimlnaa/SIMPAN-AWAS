@@ -7,7 +7,7 @@
 | Struktur arsip:
 |
 |   Kategori UTAMA (tetap, tidak bisa dihapus):
-|     1. Penanganan Pelanggaran  -> Formulir Laporan (B.1), Formulir Temuan (B.2),
+|     1. Penanganan Pelanggaran  -> Formulir Laporan (B.1 dan A.1), Formulir Temuan (B.2),
 |                                   Tanda Bukti Penyampaian Laporan (B.3),
 |                                   Tanda Bukti Perbaikan Laporan (B.3.1)
 |     2. Penyelesaian Sengketa   -> Tanda Terima Dokumen (PSPP-03), Daftar Alat Bukti Pemohon (PSPP-10),
@@ -121,7 +121,7 @@ $barisDokumenTandaBukti = [
     ],
 ];
 
-return [
+$config = [
 
     /*
     | Nama aplikasi. Ubah di sini saja, semua halaman ikut berganti.
@@ -137,6 +137,7 @@ return [
     'kantor' => [
         'nama' => env('ARSIP_KANTOR_NAMA', 'Bawaslu Kabupaten Banyumas'),
         'alamat' => env('ARSIP_KANTOR_ALAMAT', ''),
+        'telepon' => env('ARSIP_KANTOR_TELEPON', ''),
         'email' => env('ARSIP_KANTOR_EMAIL', ''),
         'website' => env('ARSIP_KANTOR_WEBSITE', ''),
     ],
@@ -442,27 +443,19 @@ return [
             'baris' => [
                 'label' => 'Rincian dokumen',
                 'min' => 1, 'max' => 30,
-                'tambah' => 'Tambah dokumen lainnya',
-                'kosong' => 'Belum ada dokumen dipilih. Centang dokumen di atas untuk menambahkannya.',
-                'pilihan' => [
-                    'permohonan' => 'Surat permohonan penyelesaian sengketa proses Pemilu',
-                    'identitas' => 'Fotokopi identitas pemohon',
-                    'kuasa' => 'Surat kuasa (jika dikuasakan)',
-                    'keputusan_kpu' => 'Salinan keputusan KPU yang disengketakan',
-                    'uraian_alasan' => 'Uraian alasan permohonan',
-                    'alat_bukti' => 'Alat bukti pendukung (dokumen, surat, rekaman, atau bukti elektronik lainnya)',
-                ],
+                'tambah' => 'Tambah dokumen',
+                'kosong' => 'Belum ada dokumen. Klik tombol di bawah untuk menambahkan.',
                 'kolom' => [
                     'jenis' => [
-                        'label' => 'Jenis Dokumen', 'type' => 'text', 'wide' => true,
-                        'hint' => 'Pilih dari daftar dokumen. Gunakan "Tambah dokumen lainnya" untuk dokumen di luar daftar.',
-                        'rules' => ['required', 'string', 'max:500'],
+                        'label' => 'Jenis Dokumen', 'type' => 'textarea', 'rows' => 3, 'wide' => true,
+                        'hint' => 'Baris pertama = nama dokumen. Baris berikutnya (tekan Enter) otomatis menjadi butir a, b, c, dst.',
+                        'rules' => ['required', 'string', 'max:2000'],
                     ],
-                    'cetak' => ['label' => 'Jumlah Dokumen Cetak', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:9999']],
-                    'digital' => ['label' => 'Jumlah Dokumen Digital', 'type' => 'number', 'rules' => ['required', 'integer', 'min:0', 'max:9999']],
+                    'cetak' => ['label' => 'Jumlah Dokumen Cetak', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:30']],
+                    'digital' => ['label' => 'Jumlah Dokumen Digital', 'type' => 'text', 'rules' => ['nullable', 'string', 'max:30']],
                     'keterangan' => [
-                        'label' => 'Keterangan', 'type' => 'textarea', 'rows' => 2, 'wide' => true,
-                        'hint' => 'Opsional. Isi bila ada keterangan khusus untuk dokumen ini.',
+                        'label' => 'Keterangan', 'type' => 'textarea', 'rows' => 3, 'wide' => true,
+                        'hint' => 'Satu baris saja = teks biasa. Dua baris atau lebih otomatis menjadi butir a, b, dst.',
                         'rules' => ['nullable', 'string', 'max:2000'],
                     ],
                 ],
@@ -501,6 +494,7 @@ return [
 
         // ------------------------------------------------------------------ Daftar Alat Bukti (PSPP-10)
         'alat_bukti' => [
+            'tampil' => false,
             'kategori' => 'sengketa',
             'label' => 'Daftar Alat Bukti Pemohon',
             'kode' => 'FORMULIR MODEL PSPP-10',
@@ -646,4 +640,40 @@ return [
             ],
         ],
     ],
-];
+ ];
+
+// Model A.1 adalah jenis formulir laporan yang berbeda, tetapi memakai struktur isian
+// identitas/peristiwa yang sama dengan B.1. Duplikasi skema ini mencegah perubahan
+// kolom database dan menjaga data B.1 yang sudah tersimpan tetap kompatibel.
+$fieldsA1 = $config['jenis_arsip']['formulir_laporan']['fields'];
+$fieldsA1['nomor_laporan']['hint'] = 'Nomor register laporan diisi setelah laporan dinyatakan memenuhi syarat formal dan materiel.';
+
+$config['jenis_arsip']['formulir_laporan_a1'] = array_replace(
+    $config['jenis_arsip']['formulir_laporan'],
+    [
+        'kategori' => 'pelanggaran',
+        'label' => 'Formulir Laporan',
+        'kode' => 'FORMULIR MODEL A.1',
+        'singkat' => 'A.1',
+        'ikon' => 'file-text',
+        'pdf' => 'arsip.pdf.a1',
+        'pdf_nama' => 'Formulir-A1-Laporan',
+        'fields' => $fieldsA1,
+    ]
+);
+
+// Tempatkan A.1 tepat setelah B.1 pada dropdown kategori Penanganan Pelanggaran.
+$jenisBerurutan = [];
+foreach ($config['jenis_arsip'] as $kunci => $definisi) {
+    if ($kunci === 'formulir_laporan_a1') {
+        continue;
+    }
+
+    $jenisBerurutan[$kunci] = $definisi;
+    if ($kunci === 'formulir_laporan') {
+        $jenisBerurutan['formulir_laporan_a1'] = $config['jenis_arsip']['formulir_laporan_a1'];
+    }
+}
+$config['jenis_arsip'] = $jenisBerurutan;
+
+return $config;
