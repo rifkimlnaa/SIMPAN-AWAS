@@ -1,0 +1,19 @@
+1) routes/web.php — tambahkan PALING BAWAH:
+
+require __DIR__.'/backup.php';
+
+2) routes/console.php — tambahkan PALING BAWAH:
+
+require __DIR__.'/backup-schedule.php';
+
+3) resources/views/partials/sidebar.blade.php — cari blok admin:
+
+@if ($admin)
+    ... menu Kategori dan Petugas ...
+@endif
+
+Tambahkan include di dalam blok itu, misalnya setelah link Petugas:
+
+@include('partials.sidebar-backup-link')
+
+Jangan mengganti seluruh file sidebar karena proyek mungkin sudah memiliki perubahan auto-collapse/animasi. Cukup tambahkan satu baris include.

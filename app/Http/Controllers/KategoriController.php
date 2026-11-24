@@ -15,7 +15,7 @@ class KategoriController extends Controller
     public function index(): View
     {
         return view('kategori.index', [
-            'kategoris' => Kategori::withCount('arsips')->orderBy('nama')->get(),
+            'kategoris' => Kategori::withCount('arsips')->urut()->get(),
         ]);
     }
 
@@ -45,6 +45,11 @@ class KategoriController extends Controller
 
     public function destroy(Kategori $kategori): RedirectResponse
     {
+        // Dua kategori utama (Penanganan Pelanggaran & Penyelesaian Sengketa) tidak boleh dihapus.
+        if ($kategori->isUtama()) {
+            return back()->with('error', "Kategori utama \"{$kategori->nama}\" tidak bisa dihapus.");
+        }
+
         $jumlah = $kategori->arsips()->count();
 
         if ($jumlah > 0) {
@@ -58,18 +63,11 @@ class KategoriController extends Controller
 
     private function validated(Request $request, ?Kategori $kategori = null): array
     {
-        $rules = [
+        // Kategori tambahan hanya punya nama dan keterangan (tanpa pilihan jenis arsip).
+        $data = $request->validate([
             'nama' => ['required', 'string', 'max:100', Rule::unique('kategoris', 'nama')->ignore($kategori?->id)],
             'keterangan' => ['nullable', 'string', 'max:500'],
-        ];
-
-        // Jenis isian ditentukan saat kategori dibuat dan tidak bisa diubah lagi
-        // (struktur datanya berbeda antara formulir lengkap dan sederhana).
-        if (! $kategori) {
-            $rules['jenis'] = ['required', Rule::in([Kategori::JENIS_FORMULIR, Kategori::JENIS_SEDERHANA])];
-        }
-
-        $data = $request->validate($rules, [], ['jenis' => 'jenis isian arsip']);
+        ]);
 
         $data['slug'] = Str::slug($data['nama']);
 
@@ -81,6 +79,11 @@ class KategoriController extends Controller
             throw ValidationException::withMessages([
                 'nama' => 'Nama kategori tidak valid atau terlalu mirip dengan kategori lain.',
             ]);
+        }
+
+        // Kategori baru selalu berisian sederhana. Jenis kategori utama tidak pernah diubah dari sini.
+        if (! $kategori) {
+            $data['jenis'] = Kategori::JENIS_SEDERHANA;
         }
 
         return $data;

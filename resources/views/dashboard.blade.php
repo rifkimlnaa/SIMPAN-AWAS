@@ -13,7 +13,7 @@
             {{ $admin ? 'Ringkasan arsip, petugas, dan aktivitas download.' : 'Ringkasan arsip yang Anda unggah dan aktivitas download Anda.' }}
         </p>
     </div>
-    <img src="{{ asset('img/logo.png') }}" alt="Logo Bawaslu Kabupaten Banyumas" class="h-12 w-auto shrink-0 self-start dark:rounded-lg dark:bg-white dark:p-1.5 sm:self-auto">
+    <img src="{{ asset('img/logo.png') }}" alt="Logo Bawaslu Kabupaten Banyumas" class="dashboard-welcome-logo h-12 w-auto shrink-0 self-start sm:self-auto">
 </section>
 
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -56,14 +56,23 @@
 
 <div class="mt-6 grid gap-6 xl:grid-cols-3">
     <section class="card p-5 xl:col-span-2">
-        <h2 class="text-sm font-semibold text-slate-900">Download per hari</h2>
-        <p class="text-xs text-slate-500">{{ $chartDays }} hari terakhir</p>
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-semibold text-slate-900">Download per hari</h2>
+                <p class="text-xs text-slate-500">{{ $chartDays }} hari terakhir</p>
+            </div>
+            <div class="gc-stats" id="chartStats">
+                <div class="gc-stat"><small>Total</small><strong data-stat="total">0</strong></div>
+                <div class="gc-stat"><small>Rata-rata/hari</small><strong data-stat="avg">0</strong></div>
+                <div class="gc-stat"><small>Puncak</small><strong data-stat="peak">–</strong></div>
+            </div>
+        </div>
         <div class="mt-4 h-64">
-            <canvas id="chartDownload"
-                    data-labels="{{ json_encode($labels) }}"
-                    data-values="{{ json_encode($values) }}"
-                    role="img"
-                    aria-label="Grafik jumlah download arsip per hari selama {{ $chartDays }} hari terakhir"></canvas>
+            <div id="chartDownload"
+                 data-labels="{{ json_encode($labels) }}"
+                 data-values="{{ json_encode($values) }}"
+                 role="img"
+                 aria-label="Grafik jumlah download arsip per hari selama {{ $chartDays }} hari terakhir"></div>
         </div>
     </section>
 
@@ -92,33 +101,5 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script>
-    (function () {
-        var canvas = document.getElementById('chartDownload');
-        if (!canvas || !window.Chart) return;
-        window.Chart.defaults.font.family = '"Plus Jakarta Sans", sans-serif';
-        var gelap = document.documentElement.classList.contains('dark');
-        window.Chart.defaults.color = gelap ? '#94a3b8' : '#64748b';
-        new window.Chart(canvas, {
-            type: 'bar',
-            data: {
-                labels: JSON.parse(canvas.dataset.labels || '[]'),
-                datasets: [{ label: 'Download', data: JSON.parse(canvas.dataset.values || '[]'), backgroundColor: gelap ? '#6096d6' : '#2f5a8a', borderRadius: 4, maxBarThickness: 18 }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: function (c) { return c.parsed.y + ' download'; } } }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gelap ? 'rgba(148,163,184,.15)' : '#f1f5f9' } },
-                    x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10 } }
-                }
-            }
-        });
-    })();
-</script>
+<script src="{{ asset('js/chart-download.js') }}?v={{ @filemtime(public_path('js/chart-download.js')) }}"></script>
 @endpush

@@ -11,16 +11,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Dua kategori utama. Nama bisa diubah admin lewat menu Kategori.
-        $kategori = [
-            ['nama' => 'PSAP', 'keterangan' => 'Penyelesaian Sengketa Antar Peserta Pemilu'],
-            ['nama' => 'PSPP', 'keterangan' => 'Penyelesaian Sengketa Peserta Pemilu dengan Penyelenggara Pemilu'],
-        ];
-
-        foreach ($kategori as $item) {
+        // Dua kategori utama: Penanganan Pelanggaran dan Penyelesaian Sengketa.
+        // Keduanya tidak bisa dihapus; admin boleh mengubah nama/keterangannya lewat menu Kategori.
+        foreach (config('arsip.kategori_utama') as $jenis => $item) {
+            // firstOrCreate: nama yang sudah diubah admin tidak ditimpa saat seeder dijalankan ulang.
             Kategori::firstOrCreate(
-                ['slug' => Str::slug($item['nama'])],
-                ['nama' => $item['nama'], 'keterangan' => $item['keterangan'], 'jenis' => Kategori::JENIS_FORMULIR]
+                ['jenis' => $jenis],
+                ['nama' => $item['nama'], 'slug' => Str::slug($item['nama']), 'keterangan' => $item['keterangan']]
             );
         }
 

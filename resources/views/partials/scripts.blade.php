@@ -2,10 +2,11 @@
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="{{ asset('css/popup.css') }}?v={{ @filemtime(public_path('css/popup.css')) }}">
 <script>
     // Warna pop up mengikuti tema aktif.
     function swalTema() {
-        return document.documentElement.classList.contains('dark') ? { background: '#0f172a', color: '#e2e8f0' } : {};
+        return {}; // warna diatur popup.css (kaca, ikut mode terang/gelap)
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -15,7 +16,7 @@
             Swal.fire(Object.assign({ toast: true, position: 'top-end', icon: 'success', text: @json(session('success')), showConfirmButton: false, timer: 3500, timerProgressBar: true }, swalTema()));
         @endif
         @if (session('error'))
-            Swal.fire(Object.assign({ icon: 'error', title: 'Gagal', text: @json(session('error')), confirmButtonText: 'Tutup', confirmButtonColor: '#3b6ea8' }, swalTema()));
+            Swal.fire(Object.assign({ icon: 'error', title: 'Gagal', text: @json(session('error')), confirmButtonText: 'Tutup' }, swalTema()));
         @endif
     });
 

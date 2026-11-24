@@ -11,15 +11,24 @@ use Illuminate\View\View;
 
 class AuthController extends Controller
 {
-    private const MAX_ATTEMPTS = 5;
+    private const MAX_ACCOUNT_IP_ATTEMPTS = 5;
+    private const MAX_IP_ATTEMPTS = 30;
     private const DECAY_SECONDS = 60;
 
     public function showLogin(): View
     {
-        // rescue(): jika tabel pengaturan belum dimigrasi, login tetap tampil dengan latar biru polos.
-        return view('auth.login', [
-            'latarUrl' => rescue(fn () => \App\Models\Pengaturan::latarLoginUrl(), null, false),
-        ]);
+        // rescue(): jika tabel pengaturan belum tersedia, login tetap tampil dengan latar bawaan.
+        $mediaLatar = rescue(fn () => [
+            'latarUrl' => \App\Models\Pengaturan::latarLoginUrl(),
+            'latarIsVideo' => \App\Models\Pengaturan::latarLoginIsVideo(),
+            'latarMimeType' => \App\Models\Pengaturan::latarLoginMimeType(),
+        ], [
+            'latarUrl' => null,
+            'latarIsVideo' => false,
+            'latarMimeType' => null,
+        ], false);
+
+        return view('auth.login', $mediaLatar);
     }
 
     public function login(Request $request): RedirectResponse
@@ -29,29 +38,40 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        // Batasi percobaan per username + IP untuk menahan tebak-tebakan password.
-        $throttleKey = Str::lower($credentials['username']).'|'.$request->ip();
+        // Batasi percobaan untuk username+IP dan juga IP secara keseluruhan.
+        // Hash mencegah username/IP mentah menjadi bagian dari key cache.
+        $ip = (string) $request->ip();
+        $accountKey = 'login:account-ip:'.hash('sha256', Str::lower(trim($credentials['username'])).'|'.$ip);
+        $ipKey = 'login:ip:'.hash('sha256', $ip);
 
-        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_ATTEMPTS)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
+        $accountLocked = RateLimiter::tooManyAttempts($accountKey, self::MAX_ACCOUNT_IP_ATTEMPTS);
+        $ipLocked = RateLimiter::tooManyAttempts($ipKey, self::MAX_IP_ATTEMPTS);
+
+        if ($accountLocked || $ipLocked) {
+            $seconds = max(
+                $accountLocked ? RateLimiter::availableIn($accountKey) : 0,
+                $ipLocked ? RateLimiter::availableIn($ipKey) : 0
+            );
 
             return back()
                 ->withInput($request->only('username'))
-                ->with('error', "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.");
+                ->with('error', "Terlalu banyak percobaan login. Silakan coba lagi dalam {$seconds} detik.");
         }
 
         if (Auth::attempt([
             'username' => $credentials['username'],
             'password' => $credentials['password'],
         ])) {
-            RateLimiter::clear($throttleKey);
+            RateLimiter::clear($accountKey);
+            RateLimiter::clear($ipKey);
             $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard'))
                 ->with('success', 'Selamat datang, '.Auth::user()->name.'.');
         }
 
-        RateLimiter::hit($throttleKey, self::DECAY_SECONDS);
+        RateLimiter::hit($accountKey, self::DECAY_SECONDS);
+        RateLimiter::hit($ipKey, self::DECAY_SECONDS);
 
         return back()
             ->withInput($request->only('username'))

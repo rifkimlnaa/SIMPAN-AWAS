@@ -23,8 +23,8 @@ class Pengaturan extends Model
         static::updateOrCreate(['kunci' => $kunci], ['nilai' => $nilai]);
     }
 
-    /** URL foto latar halaman login, atau null jika belum diatur (panel biru polos). */
-    public static function latarLoginUrl(): ?string
+    /** Path media latar login jika file masih tersedia di disk publik. */
+    public static function latarLoginPath(): ?string
     {
         $path = static::ambil(self::LATAR_LOGIN);
 
@@ -32,6 +32,38 @@ class Pengaturan extends Model
             return null;
         }
 
-        return asset('storage/'.$path);
+        return $path;
+    }
+
+    /** URL media latar halaman login, atau null jika belum diatur. */
+    public static function latarLoginUrl(): ?string
+    {
+        $path = static::latarLoginPath();
+
+        return $path ? asset('storage/'.$path) : null;
+    }
+
+    /** Menentukan apakah media latar adalah video yang didukung browser. */
+    public static function latarLoginIsVideo(): bool
+    {
+        $path = static::latarLoginPath();
+        $extension = $path ? strtolower(pathinfo($path, PATHINFO_EXTENSION)) : '';
+
+        return in_array($extension, ['mp4', 'webm'], true);
+    }
+
+    /** MIME type yang sesuai untuk elemen video HTML. */
+    public static function latarLoginMimeType(): ?string
+    {
+        $path = static::latarLoginPath();
+        if (! $path) {
+            return null;
+        }
+
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'mp4' => 'video/mp4',
+            'webm' => 'video/webm',
+            default => null,
+        };
     }
 }

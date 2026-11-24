@@ -31,10 +31,10 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        Password::defaults(fn () => Password::min(8)->letters()->numbers());
+        Password::defaults(fn () => Password::min(12)->letters()->numbers());
 
         View::composer('partials.sidebar', function ($view) {
-            $view->with('sidebarKategori', Kategori::orderBy('nama')->get(['id', 'nama', 'slug']));
+            $view->with('sidebarKategori', Kategori::urut()->get(['id', 'nama', 'slug', 'jenis']));
         });
     }
 }

@@ -1,0 +1,84 @@
+/* Pop up & notifikasi (SweetAlert2) bergaya kaca — dipakai di halaman login maupun aplikasi. */
+:root {
+    --pg-bg: rgba(255, 255, 255, .66);
+    --pg-border: rgba(255, 255, 255, .85);
+    --pg-text: #2f3849;
+    --pg-muted: #6b7587;
+    --pg-edge: rgba(20, 27, 41, .08);
+    --pg-accent: #ff5b37;
+    --pg-btn-glass: rgba(255, 255, 255, .62);
+    --pg-shadow: 0 2rem 4rem -1.25rem rgba(20, 27, 41, .45), 0 .25rem 1rem rgba(20, 27, 41, .08);
+}
+html.dark {
+    --pg-bg: rgba(18, 28, 46, .62);
+    --pg-border: rgba(255, 255, 255, .16);
+    --pg-text: #e5ebf5;
+    --pg-muted: #9aa8bd;
+    --pg-edge: rgba(0, 0, 0, .4);
+    --pg-btn-glass: rgba(255, 255, 255, .09);
+    --pg-shadow: 0 2rem 4rem -1.25rem rgba(0, 0, 0, .75), 0 .25rem 1rem rgba(0, 0, 0, .3);
+}
+
+/* Latar belakang: hanya untuk pop up di tengah layar. Toast (pojok) tidak memburamkan halaman. */
+.swal2-container.swal2-center.swal2-backdrop-show {
+    background: rgba(15, 23, 42, .34) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(1.2); backdrop-filter: blur(6px) saturate(1.2);
+}
+.swal2-container:not(.swal2-center), .swal2-container.swal2-no-backdrop {
+    background: transparent !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+
+/* Kotak pop up */
+.swal2-popup {
+    background: var(--pg-bg) !important; color: var(--pg-text) !important;
+    border: 1px solid var(--pg-border); border-radius: 1.75rem !important; padding: 1.75rem 1.5rem 1.5rem !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: var(--pg-shadow), inset 0 1px 0 rgba(255, 255, 255, .5) !important;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+.swal2-title { color: var(--pg-text) !important; font-size: 1.2rem; font-weight: 700; padding-top: .5rem; }
+.swal2-html-container { color: var(--pg-muted) !important; font-size: .9rem; line-height: 1.6; margin-top: .5rem; }
+
+/* Ikon: cincin lembut, tanpa blok putih bawaan */
+.swal2-icon { background: rgba(255, 255, 255, .35); border-width: .2rem; margin-top: .5rem; }
+html.dark .swal2-icon { background: rgba(255, 255, 255, .06); }
+.swal2-icon.swal2-success [class^=swal2-success-circular-line], .swal2-icon.swal2-success .swal2-success-fix { background: transparent !important; }
+.swal2-icon.swal2-warning { border-color: rgba(255, 91, 55, .55); color: var(--pg-accent); }
+.swal2-icon.swal2-error { border-color: rgba(220, 38, 38, .5); color: #dc2626; }
+.swal2-icon.swal2-error [class^=swal2-x-mark-line] { background-color: #dc2626; }
+.swal2-icon.swal2-success { border-color: transparent !important; color: #22a05e; }
+.swal2-icon.swal2-success .swal2-success-ring { border: .2rem solid rgba(34, 160, 94, .45) !important; }
+.swal2-icon.swal2-success [class^=swal2-success-line] { background-color: #22a05e; }
+
+/* Tombol berbentuk kapsul */
+.swal2-actions { gap: .625rem; margin-top: 1.25rem; }
+.swal2-styled { border-radius: 999px !important; padding: .625rem 1.5rem !important; font-size: .875rem !important; font-weight: 700 !important; border: 1px solid transparent !important; margin: 0 !important; transition: transform .18s ease, filter .18s ease, box-shadow .18s ease !important; }
+.swal2-styled:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.swal2-styled:active { transform: translateY(0) scale(.98); }
+.swal2-styled:focus { box-shadow: 0 0 0 .2rem rgba(255, 91, 55, .22) !important; }
+.swal2-confirm { background: linear-gradient(135deg, #ff7957, #ed4b28) !important; color: #fff !important; box-shadow: 0 .5rem 1.1rem -.3rem rgba(237, 75, 40, .55) !important; border-color: rgba(255, 255, 255, .25) !important; }
+.swal2-confirm[style*="220, 38, 38"], .swal2-confirm[style*="#dc2626"] { background: linear-gradient(135deg, #f26a6a, #dc2626) !important; box-shadow: 0 .5rem 1.1rem -.3rem rgba(220, 38, 38, .55) !important; }
+.swal2-cancel, .swal2-deny { background: var(--pg-btn-glass) !important; color: var(--pg-text) !important; border-color: var(--pg-border) !important; }
+
+/* Notifikasi kecil (toast): kapsul kaca */
+.swal2-popup.swal2-toast {
+    padding: .5rem 1rem .5rem .625rem !important; border-radius: 999px !important; align-items: center; min-height: 0 !important; width: auto !important; max-width: 24rem;
+    box-shadow: var(--pg-shadow), inset 0 1px 0 rgba(255, 255, 255, .5) !important;
+}
+.swal2-popup.swal2-toast .swal2-icon { margin: 0 .625rem 0 0; width: 1.75rem; height: 1.75rem; min-width: 1.75rem; }
+.swal2-popup.swal2-toast .swal2-icon .swal2-icon-content { font-size: 1.1rem; }
+.swal2-popup.swal2-toast .swal2-icon { align-self: center; }
+.swal2-popup.swal2-toast .swal2-title { display: none; }
+.swal2-popup.swal2-toast .swal2-html-container { align-self: center; margin: 0; padding: 0 .25rem 0 0; font-size: .85rem; font-weight: 600; color: var(--pg-text) !important; }
+.swal2-timer-progress-bar { background: linear-gradient(90deg, #ff9a6b, #ff5b37) !important; height: .2rem; }
+.swal2-timer-progress-bar-container { left: 1rem; right: 1rem; bottom: .15rem; width: auto; border-radius: 999px; overflow: hidden; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .swal2-popup { background: var(--pg-bg) !important; filter: none; }
+    html:not(.dark) .swal2-popup { background: rgba(255, 255, 255, .96) !important; }
+    html.dark .swal2-popup { background: rgba(18, 28, 46, .97) !important; }
+}
+
+/* Toast: satu lapis saja (tanpa cincin ganda pada ikon) */
+.swal2-popup.swal2-toast .swal2-icon { border-width: 0 !important; background: transparent !important; }
+.swal2-popup.swal2-toast .swal2-icon.swal2-success .swal2-success-ring { border-width: .15rem !important; }

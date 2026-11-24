@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Kategori extends Model
 {
-    /** Formulir Laporan (Model B.1) dengan semua kolomnya: PSAP dan PSPP. */
-    public const JENIS_FORMULIR = 'formulir';
+    /** Kategori utama 1: Penanganan Pelanggaran (B.1, B.2, B.3, B.3.1). */
+    public const JENIS_PELANGGARAN = 'pelanggaran';
 
-    /** Isian sederhana: judul, keterangan, tanggal, dan berkas. Dipakai kategori buatan admin. */
+    /** Kategori utama 2: Penyelesaian Sengketa (Tanda Terima, Daftar Alat Bukti, Berita Acara). */
+    public const JENIS_SENGKETA = 'sengketa';
+
+    /** Kategori tambahan buatan admin: hanya judul, keterangan, tanggal, dan berkas. */
     public const JENIS_SEDERHANA = 'sederhana';
 
     protected $fillable = ['nama', 'slug', 'keterangan', 'jenis'];
@@ -20,13 +23,35 @@ class Kategori extends Model
         return $this->hasMany(Arsip::class);
     }
 
+    /** Dua kategori utama di atas, lalu kategori tambahan menurut abjad. */
+    public function scopeUrut($query)
+    {
+        return $query
+            ->orderByRaw("CASE jenis WHEN 'pelanggaran' THEN 0 WHEN 'sengketa' THEN 1 ELSE 2 END")
+            ->orderBy('nama');
+    }
+
     public function isSederhana(): bool
     {
         return $this->jenis === self::JENIS_SEDERHANA;
     }
 
+    /** Kategori utama (Penanganan Pelanggaran / Penyelesaian Sengketa): tidak bisa dihapus. */
+    public function isUtama(): bool
+    {
+        return in_array($this->jenis, [self::JENIS_PELANGGARAN, self::JENIS_SENGKETA], true);
+    }
+
+    /**
+     * Pilihan jenis arsip untuk kategori ini: [kunci => definisi]. Kosong untuk kategori tambahan.
+     */
+    public function jenisArsipList(): array
+    {
+        return $this->isUtama() ? Arsip::jenisUntukKategori($this->jenis) : [];
+    }
+
     public function jenisLabel(): string
     {
-        return $this->isSederhana() ? 'Sederhana' : 'Formulir lengkap';
+        return $this->isUtama() ? 'Kategori utama' : 'Kategori tambahan';
     }
 }

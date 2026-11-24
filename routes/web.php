@@ -9,6 +9,8 @@ use App\Http\Controllers\PetugasController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\RiwayatController;
 use Illuminate\Support\Facades\Route;
+require __DIR__.'/backup.php';
+
 
 // ID di URL harus angka.
 Route::pattern('arsip', '[0-9]+');
@@ -35,12 +37,11 @@ Route::middleware('auth')->group(function () {
     // Pengaturan: tampilan/mode gelap (semua pengguna). Foto latar login khusus admin, di grup bawah.
     Route::get('/pengaturan', [PengaturanController::class, 'edit'])->name('pengaturan.edit');
 
-    // Lihat data kategori & petugas (admin & petugas)
-    Route::get('/kategori', [KategoriController::class, 'index'])->name('kategori.index');
-    Route::get('/petugas', [PetugasController::class, 'index'])->name('petugas.index');
-
-    // Kelola kategori & petugas (hanya admin)
+    // Kategori & petugas: hanya admin (petugas tidak melihat maupun mengelolanya).
     Route::middleware('role:admin')->group(function () {
+        Route::get('/kategori', [KategoriController::class, 'index'])->name('kategori.index');
+        Route::get('/petugas', [PetugasController::class, 'index'])->name('petugas.index');
+
         Route::post('/pengaturan/latar-login', [PengaturanController::class, 'updateLatarLogin'])->name('pengaturan.latar');
         Route::delete('/pengaturan/latar-login', [PengaturanController::class, 'destroyLatarLogin'])->name('pengaturan.latar.destroy');
 
@@ -68,6 +69,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/arsip/{arsip}/berkas', [ArsipController::class, 'berkas'])->name('arsip.berkas');
     Route::get('/arsip/{arsip}/unduh', [ArsipController::class, 'unduh'])->name('arsip.unduh');
     Route::get('/arsip/{arsip}/formulir', [ArsipController::class, 'formulir'])->name('arsip.formulir');
+    Route::get('/arsip/{arsip}/formulir/preview', [ArsipController::class, 'previewFormulir'])->name('arsip.formulir.preview');
+    Route::get('/arsip/{arsip}/formulir-word', [ArsipController::class, 'formulirWord'])->name('arsip.formulir.word');
+    Route::get('/arsip/{arsip}/foto/{foto}', [ArsipController::class, 'foto'])->whereNumber('foto')->name('arsip.foto');
+    Route::get('/arsip/{arsip}/formulir-word', [ArsipController::class, 'formulirWord'])->name('arsip.formulir.word');
+    Route::get('/arsip/{arsip}/foto/{foto}', [ArsipController::class, 'foto'])->whereNumber('foto')->name('arsip.foto');
 
     Route::get('/riwayat-download', [RiwayatController::class, 'index'])->name('riwayat.index');
+
 });

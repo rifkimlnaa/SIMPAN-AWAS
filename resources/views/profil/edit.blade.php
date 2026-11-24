@@ -81,7 +81,7 @@
                 <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required class="input">
             </div>
         </div>
-        <p class="hint !mt-0">Minimal 8 karakter, kombinasi huruf dan angka.</p>
+        <p class="hint !mt-0">Minimal 12 karakter, kombinasi huruf dan angka.</p>
 
         <div class="flex justify-end border-t border-slate-100 pt-5">
             <button type="submit" class="btn btn-primary"><i data-lucide="shield-check" class="h-4 w-4"></i> Ganti password</button>

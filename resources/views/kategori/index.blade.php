@@ -19,7 +19,7 @@
                     <th class="no-sort">No</th>
                     <th>Nama</th>
                     <th>Keterangan</th>
-                    <th>Jenis isian</th>
+                    <th>Jenis kategori</th>
                     <th>Jumlah arsip</th>
                     @if ($admin)<th class="no-sort">Aksi</th>@endif
                 </tr>
@@ -29,19 +29,21 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td><span class="badge">{{ $k->nama }}</span></td>
-                        <td>{{ $k->keterangan ?: '—' }}</td>
+                        <td>{{ $k->keterangan ?: '—' }}@if ($k->isUtama())<span class="mt-1 block text-xs text-slate-400">Jenis arsip: {{ collect($k->jenisArsipList())->pluck('label')->implode(', ') }}</span>@endif</td>
                         <td><span class="badge badge-gray">{{ $k->jenisLabel() }}</span></td>
                         <td>{{ number_format($k->arsips_count, 0, ',', '.') }}</td>
                         @if ($admin)
                             <td>
                                 <div class="flex items-center gap-1.5">
                                     <a class="btn-icon" href="{{ route('kategori.edit', $k) }}" title="Edit" aria-label="Edit kategori"><i data-lucide="pencil" class="h-4 w-4"></i></a>
-                                    <form method="POST" action="{{ route('kategori.destroy', $k) }}" class="js-confirm-delete"
-                                          data-message="Kategori {{ $k->nama }} akan dihapus permanen.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-icon btn-icon-danger" title="Hapus" aria-label="Hapus kategori"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
-                                    </form>
+                                    @unless ($k->isUtama())
+                                        <form method="POST" action="{{ route('kategori.destroy', $k) }}" class="js-confirm-delete"
+                                              data-message="Kategori {{ $k->nama }} akan dihapus permanen.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-icon btn-icon-danger" title="Hapus" aria-label="Hapus kategori"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                                        </form>
+                                    @endunless
                                 </div>
                             </td>
                         @endif

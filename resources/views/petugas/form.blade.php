@@ -37,7 +37,7 @@
             <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="input">
         </div>
     </div>
-    <p class="hint !mt-0">{{ $edit ? 'Kosongkan jika tidak ingin mengganti. ' : '' }}Minimal 8 karakter, kombinasi huruf dan angka.</p>
+    <p class="hint !mt-0">{{ $edit ? 'Kosongkan jika tidak ingin mengganti. ' : '' }}Minimal 12 karakter, kombinasi huruf dan angka.</p>
 
     <div class="flex justify-end gap-3 border-t border-slate-100 pt-5">
         <a class="btn btn-light" href="{{ route('petugas.index') }}">Batal</a>
