@@ -437,7 +437,7 @@
                 </div>
             </div>
 
-            <h1 id="landing-heading" class="login-hero-title">Kelola data penanganan pelanggaran <span>dalam satu sistem.</span></h1>
+            <h1 id="landing-heading" class="login-hero-title">KELOLA DATA PENANGANAN PELANGGARAN DAN PENYELESAIAN SENGKETA PROSES PEMILU <span>dalam satu sistem.</span></h1>
             <p class="login-hero-copy">
                 SIMPAN-AWAS membantu pengelolaan dokumen Penanganan Pelanggaran dan Penyelesaian Sengketa secara lebih tertata, terpusat, dan mudah ditelusuri.
             </p>
