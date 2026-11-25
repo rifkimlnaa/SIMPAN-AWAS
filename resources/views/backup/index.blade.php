@@ -9,13 +9,22 @@
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">Backup &amp; Pemulihan Data</h1>
         <p class="mt-1 max-w-2xl text-sm text-slate-500">Cadangkan database dan berkas arsip SIMPAN-AWAS, lalu pulihkan ketika diperlukan.</p>
     </div>
-    <form method="POST" action="{{ route('backup.store') }}">
-        @csrf
-        <button type="submit" class="btn btn-primary" @disabled(!$keyReady)>
-            <i data-lucide="cloud-upload" class="h-4 w-4"></i>
-            Buat Backup Sekarang
-        </button>
-    </form>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="POST" action="{{ route('backup.unduh-zip') }}">
+            @csrf
+            <button type="submit" class="btn btn-primary" title="Buat ZIP berisi database dan semua berkas arsip, langsung diunduh">
+                <i data-lucide="download" class="h-4 w-4"></i>
+                Unduh Backup (ZIP)
+            </button>
+        </form>
+        <form method="POST" action="{{ route('backup.store') }}">
+            @csrf
+            <button type="submit" class="btn btn-light" @disabled(!$keyReady)>
+                <i data-lucide="cloud-upload" class="h-4 w-4"></i>
+                Simpan di server
+            </button>
+        </form>
+    </div>
 </div>
 
 <section class="card mb-6 overflow-hidden" id="hosting-storage-panel" data-endpoint="{{ $storageUsageUrl }}" aria-live="polite">

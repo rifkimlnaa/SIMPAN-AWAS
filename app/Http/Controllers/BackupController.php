@@ -60,6 +60,24 @@ class BackupController extends Controller
         }
     }
 
+    /** Satu klik: langsung unduh ZIP berisi database + semua berkas arsip. */
+    public function unduhZip(BackupService $service)
+    {
+        try {
+            $zip = $service->createDownloadZip();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', $this->safeMessage($exception));
+        }
+
+        return response()->download($zip, basename($zip), [
+            'Content-Type' => 'application/zip',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function download(Backup $backup)
     {
         abort_unless($backup->isComplete() && $backup->path, 404);

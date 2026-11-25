@@ -113,6 +113,28 @@ class BackupService
         }
     }
 
+    /**
+     * Backup sekali klik: database + seluruh berkas arsip dalam SATU file ZIP biasa (tanpa enkripsi),
+     * langsung diunduh admin. Mengembalikan path ZIP; hapus setelah dikirim (deleteFileAfterSend).
+     * Tidak dicatat di riwayat backup dan tidak bisa dipulihkan dari menu; ZIP ini untuk disimpan sendiri.
+     */
+    public function createDownloadZip(): string
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
+
+        $workDir = storage_path('app/private/.backup-work/'.Str::uuid());
+        File::ensureDirectoryExists($workDir, 0700, true);
+        app()->terminating(fn () => File::deleteDirectory($workDir));
+
+        $databaseInfo = $this->dumpDatabase($workDir);
+        $zipPath = $workDir.'/simpan-awas-backup-'.now()->format('Ymd-His').'.zip';
+        $this->buildZipArchive($zipPath, $databaseInfo);
+
+        return $zipPath;
+    }
+
     /** Restore only an existing, checksum-verified backup created by this application. */
     public function restore(Backup $backup, ?int $userId): Backup
     {
