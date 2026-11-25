@@ -5,7 +5,9 @@ Modul tambahan Laravel 12, tanpa package Composer tambahan.
 ## Fitur
 - Backup manual dari halaman khusus Admin.
 - Backup terjadwal harian, mingguan, bulanan.
-- Backup database MySQL/MariaDB atau SQLite.
+- Backup database MySQL/MariaDB melalui PDO (tanpa mysqldump) atau SQLite.
+- Pembuatan dan ekstraksi ZIP menggunakan ZipArchive, tanpa shell process.
+- Scheduler memakai callback PHP langsung sehingga tidak membutuhkan proc_open.
 - Backup file `storage/app/private/arsip` dan seluruh `storage/app/public`.
 - Enkripsi AES-256-GCM per blok dengan penanda akhir terautentikasi.
 - SHA-256 checksum untuk mendeteksi file yang berubah.
@@ -28,8 +30,10 @@ Kunci enkripsi wajib diisi sebelum tombol backup aktif.
 
 ## Perhatian kompatibilitas
 - PHP: 8.2+.
-- Ekstensi wajib: Phar, OpenSSL, zlib.
-- MySQL/MariaDB: binary `mysqldump` dan `mysql` harus tersedia dan boleh dijalankan oleh proses PHP/CLI.
+- Ekstensi wajib untuk backup baru: ZipArchive, OpenSSL, PDO MySQL (untuk database MySQL/MariaDB).
+- Tidak memerlukan `proc_open`, `exec`, `shell_exec`, `system`, `passthru`, `mysqldump`, atau binary `mysql`.
+- Restore backup lama SAWB1/TAR.GZ memerlukan ekstensi Phar; backup baru SAWB2 tidak memerlukannya.
+- Mesin PHP-native mencadangkan tabel dan data. Jika database memiliki VIEW, TRIGGER, atau ROUTINE, proses akan menolak membuat backup agar tidak menghasilkan snapshot yang tidak lengkap.
 - SQLite: file database harus berada pada filesystem yang dapat dibaca/tulis aplikasi.
 - S3: disk `s3` harus dikonfigurasi sebelumnya dalam `config/filesystems.php`.
 - Untuk otomatisasi, cron hosting perlu menjalankan `php artisan schedule:run` setiap menit.

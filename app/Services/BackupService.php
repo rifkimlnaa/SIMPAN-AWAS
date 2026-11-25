@@ -7,18 +7,20 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Phar;
 use PharData;
+use PDO;
+use ZipArchive;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 class BackupService
 {
-    private const FORMAT = 'SIMPANAWAS-BACKUP-V1';
-    private const MAGIC = 'SAWB1';
+    private const FORMAT = 'SIMPANAWAS-BACKUP-V2';
+    private const LEGACY_FORMAT = 'SIMPANAWAS-BACKUP-V1';
+    private const MAGIC = 'SAWB2';
+    private const LEGACY_MAGIC = 'SAWB1';
 
     public function create(string $type = 'manual', ?int $userId = null): Backup
     {
@@ -43,33 +45,26 @@ class BackupService
             'path' => $relativePath,
             'filename' => $filename,
             'created_by' => $userId,
-            'metadata' => ['format' => self::FORMAT],
+            'metadata' => ['format' => self::FORMAT, 'engine' => 'php-native'],
         ]);
 
         try {
             $databaseInfo = $this->dumpDatabase($workDir);
-            $tarPath = $workDir.'/snapshot.tar';
-            $fileCount = $this->buildTarArchive($tarPath, $workDir, $databaseInfo);
-
-            $tarGzPath = $tarPath.'.gz';
-            if (! is_file($tarGzPath)) {
-                throw new RuntimeException('Arsip snapshot gagal dikompresi.');
-            }
+            $zipPath = $workDir.'/snapshot.zip';
+            $fileCount = $this->buildZipArchive($zipPath, $databaseInfo);
 
             $encryptedPath = $workDir.'/'.$filename;
-            $this->encryptFile($tarGzPath, $encryptedPath, $key);
+            $this->encryptFile($zipPath, $encryptedPath, $key);
 
             $stream = fopen($encryptedPath, 'rb');
             if ($stream === false) {
                 throw new RuntimeException('Berkas backup terenkripsi tidak dapat dibaca.');
             }
-
             try {
                 $stored = $disk->put($relativePath, $stream);
             } finally {
                 fclose($stream);
             }
-
             if (! $stored) {
                 throw new RuntimeException('Penyimpanan backup gagal. Periksa kapasitas dan konfigurasi disk.');
             }
@@ -81,9 +76,11 @@ class BackupService
                 'completed_at' => now(),
                 'metadata' => array_merge($record->metadata ?? [], [
                     'database_driver' => $databaseInfo['driver'],
+                    'database_tables' => $databaseInfo['tables'] ?? [],
                     'file_count' => $fileCount,
                     'encrypted' => true,
                     'format' => self::FORMAT,
+                    'engine' => 'php-native',
                 ]),
             ]);
 
@@ -128,7 +125,7 @@ class BackupService
         $workDir = storage_path('app/private/.restore-work/'.Str::uuid());
         File::ensureDirectoryExists($workDir, 0700, true);
 
-        // Snapshot kondisi saat ini disimpan terlebih dahulu sebagai titik kembali.
+        // Simpan kondisi terkini sebelum pemulihan sebagai titik kembali.
         $safetyBackup = $this->create('pre-restore', $userId);
 
         try {
@@ -140,22 +137,32 @@ class BackupService
                 throw new RuntimeException('Checksum backup tidak cocok. Pemulihan dibatalkan.');
             }
 
-            $tarGzPath = $workDir.'/snapshot.tar.gz';
-            $this->decryptFile($encryptedPath, $tarGzPath, $key);
+            $payloadPath = $workDir.'/snapshot.payload';
+            $magic = $this->decryptFile($encryptedPath, $payloadPath, $key);
             $extractDir = $workDir.'/extract';
             File::ensureDirectoryExists($extractDir, 0700, true);
 
-            $archive = new PharData($tarGzPath);
-            $this->validateArchive($archive);
-            $archive->extractTo($extractDir, null, true);
-            unset($archive);
+            if ($magic === self::MAGIC) {
+                $this->extractZipSnapshot($payloadPath, $extractDir);
+            } elseif ($magic === self::LEGACY_MAGIC) {
+                if (! class_exists(PharData::class)) {
+                    throw new RuntimeException('Backup lama memakai format TAR.GZ dan memerlukan ekstensi Phar. Backup baru tidak lagi memerlukan Phar.');
+                }
+                $archive = new PharData($payloadPath);
+                $this->validateArchive($archive);
+                $archive->extractTo($extractDir, null, true);
+                unset($archive);
+            } else {
+                throw new RuntimeException('Versi format backup tidak didukung.');
+            }
 
             $manifestPath = $extractDir.'/manifest.json';
             if (! is_file($manifestPath)) {
                 throw new RuntimeException('Manifest backup tidak ditemukan.');
             }
             $manifest = json_decode((string) file_get_contents($manifestPath), true);
-            if (! is_array($manifest) || ($manifest['format'] ?? null) !== self::FORMAT) {
+            $allowedFormats = [self::FORMAT, self::LEGACY_FORMAT];
+            if (! is_array($manifest) || ! in_array(($manifest['format'] ?? null), $allowedFormats, true)) {
                 throw new RuntimeException('Format backup tidak dikenali.');
             }
             $requiredIncludes = ['database', 'storage/private/arsip', 'storage/public'];
@@ -170,20 +177,16 @@ class BackupService
                 throw new RuntimeException('Driver database backup berbeda dengan database aplikasi saat ini.');
             }
 
-            $this->restoreDatabase($extractDir, $databaseDriver);
+            $this->restoreDatabase($extractDir, $databaseDriver, (array) ($manifest['database_tables'] ?? []));
             $this->restoreStorageDirectories($extractDir);
 
-            // Restore database lama dapat mengembalikan tabel backups ke keadaan snapshot.
-            // Daftarkan kembali backup target dan safety snapshot bila barisnya tidak ada.
             $targetRecord = $this->ensureBackupRecordExists($backup);
             $safetyRecord = $this->ensureBackupRecordExists($safetyBackup);
-
             $targetRecord->update(['restored_by' => $userId, 'restored_at' => now()]);
 
             return $safetyRecord->fresh();
         } catch (Throwable $exception) {
             try {
-                // Keep the safety snapshot visible even if the previous DB snapshot overwrote backup metadata.
                 $this->ensureBackupRecordExists($safetyBackup);
             } catch (Throwable $recordException) {
                 Log::critical('Safety backup metadata could not be re-registered after a failed restore.', [
@@ -230,7 +233,7 @@ class BackupService
         }
         try {
             $magic = fread($stream, 5);
-            if ($magic !== self::MAGIC) {
+            if (! in_array($magic, [self::MAGIC, self::LEGACY_MAGIC], true)) {
                 throw new RuntimeException('File bukan backup SIMPAN-AWAS terenkripsi (.sawb).');
             }
             $context = hash_init('sha256');
@@ -319,6 +322,7 @@ class BackupService
         return $deleted;
     }
 
+    /** Export MySQL tables using PDO; this path does not call shell functions. */
     private function dumpDatabase(string $workDir): array
     {
         $connectionName = (string) config('database.default');
@@ -336,45 +340,42 @@ class BackupService
             if (! is_file($databasePath)) {
                 throw new RuntimeException('File database SQLite tidak ditemukan.');
             }
-
             $target = $workDir.'/database.sqlite';
             if (! copy($databasePath, $target)) {
-                throw new RuntimeException('Database SQLite gagal disalin.');
+                throw new RuntimeException('File database SQLite gagal disalin.');
             }
-
-            return ['driver' => 'sqlite', 'database_file' => $target, 'file_count' => 1];
+            return ['driver' => 'sqlite', 'database_file' => $target, 'tables' => []];
         }
 
         if (! in_array($driver, ['mysql', 'mariadb'], true)) {
-            throw new RuntimeException('Backup saat ini mendukung database MySQL/MariaDB dan SQLite.');
+            throw new RuntimeException('Backup mendukung database MySQL/MariaDB dan SQLite.');
         }
 
-        $database = (string) ($connection['database'] ?? '');
-        if ($database === '') {
-            throw new RuntimeException('Nama database belum dikonfigurasi.');
+        $pdo = \Illuminate\Support\Facades\DB::connection($connectionName)->getPdo();
+        $tableRows = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_NUM);
+        $tables = array_values(array_map(static fn ($row) => (string) ($row[0] ?? ''), $tableRows));
+        $tables = array_values(array_filter($tables, static fn ($name) => $name !== ''));
+        $tables = $this->orderTablesByForeignKeys($pdo, $tables);
+        if ($tables === []) {
+            throw new RuntimeException('Tidak ada tabel database yang dapat dicadangkan.');
         }
 
-        $command = [
-            (string) config('backup.mysql_dump_binary', 'mysqldump'),
-            '--single-transaction', '--quick', '--routines', '--triggers', '--hex-blob',
-            '--default-character-set=utf8mb4',
-        ];
-
-        if (! empty($connection['socket'])) {
-            $command[] = '--socket='.(string) $connection['socket'];
-        } else {
-            $command[] = '--host='.(string) ($connection['host'] ?? '127.0.0.1');
-            $command[] = '--port='.(string) ($connection['port'] ?? 3306);
-        }
-        if (! empty($connection['username'])) {
-            $command[] = '--user='.(string) $connection['username'];
-        }
-        $command[] = $database;
-
-        $environment = [];
-        if (isset($connection['password']) && $connection['password'] !== '') {
-            // Password tidak diletakkan di argumen command line.
-            $environment['MYSQL_PWD'] = (string) $connection['password'];
+        // Jangan membuat backup yang diam-diam mengabaikan objek DB non-tabel.
+        try {
+            $views = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'")->fetchAll(PDO::FETCH_NUM);
+            if ($views !== []) {
+                throw new RuntimeException('Database memiliki VIEW. Ekspor VIEW perlu ditangani sebelum backup dapat dinyatakan lengkap.');
+            }
+            $triggerCount = (int) $pdo->query('SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()')->fetchColumn();
+            $routineCount = (int) $pdo->query("SELECT COUNT(*) FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE()")->fetchColumn();
+            if ($triggerCount > 0 || $routineCount > 0) {
+                throw new RuntimeException('Database memiliki trigger atau routine. Backup PHP murni saat ini hanya mengarsipkan tabel dan datanya; objek tersebut harus ditangani sebelum melanjutkan.');
+            }
+        } catch (RuntimeException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            // Hak akses terbatas ke information_schema tidak otomatis menggagalkan backup tabel.
+            Log::notice('Tidak dapat memeriksa seluruh objek MySQL non-tabel saat backup.', ['message' => $exception->getMessage()]);
         }
 
         $target = $workDir.'/database.sql';
@@ -383,86 +384,410 @@ class BackupService
             throw new RuntimeException('File dump database tidak dapat dibuat.');
         }
 
+        $transactionStarted = false;
+        $bufferedAttribute = defined('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') ? constant('PDO::MYSQL_ATTR_USE_BUFFERED_QUERY') : null;
+        $previousBuffered = null;
+
         try {
-            $process = new Process($command, base_path(), $environment, null, (int) config('backup.process_timeout', 1800));
-            $process->run(function (string $type, string $buffer) use ($handle): void {
-                if ($type === Process::OUT && fwrite($handle, $buffer) === false) {
-                    throw new RuntimeException('Tidak dapat menulis hasil dump database.');
+            $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            $pdo->beginTransaction();
+            $transactionStarted = true;
+
+            $this->writeAll($handle, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
+
+            foreach ($tables as $table) {
+                $quotedTable = $this->quoteIdentifier($table);
+                $createRow = $pdo->query('SHOW CREATE TABLE '.$quotedTable)->fetch(PDO::FETCH_NUM);
+                $createSql = (string) ($createRow[1] ?? '');
+                if ($createSql === '') {
+                    throw new RuntimeException('Struktur tabel '.$table.' tidak dapat dibaca.');
                 }
-            });
-            if (! $process->isSuccessful()) {
-                throw new RuntimeException('mysqldump gagal dijalankan. Periksa apakah binary tersedia dan kredensial database benar.');
+
+                $this->writeAll($handle, 'DROP TABLE IF EXISTS '.$quotedTable.";\n");
+                $this->writeAll($handle, rtrim($createSql, "; \t\r\n").";\n");
+
+                $columns = $pdo->query('SHOW FULL COLUMNS FROM '.$quotedTable)->fetchAll(PDO::FETCH_ASSOC);
+                $insertColumns = [];
+                $columnTypes = [];
+                foreach ($columns as $column) {
+                    $name = (string) ($column['Field'] ?? '');
+                    $extra = strtolower((string) ($column['Extra'] ?? ''));
+                    if ($name === '' || str_contains($extra, 'generated')) {
+                        continue;
+                    }
+                    $insertColumns[] = $name;
+                    $columnTypes[$name] = strtolower((string) ($column['Type'] ?? ''));
+                }
+                if ($insertColumns === []) {
+                    continue;
+                }
+
+                if ($bufferedAttribute !== null) {
+                    try {
+                        $previousBuffered = $pdo->getAttribute($bufferedAttribute);
+                        $pdo->setAttribute($bufferedAttribute, false);
+                    } catch (Throwable) {
+                        $previousBuffered = null;
+                    }
+                }
+
+                $statement = $pdo->query('SELECT * FROM '.$quotedTable);
+                while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+                    $values = [];
+                    foreach ($insertColumns as $columnName) {
+                        $value = $row[$columnName] ?? null;
+                        $values[] = $this->mysqlLiteral($pdo, $value, $columnTypes[$columnName] ?? '');
+                    }
+                    $columnSql = implode(', ', array_map(fn ($name) => $this->quoteIdentifier($name), $insertColumns));
+                    $this->writeAll($handle, 'INSERT INTO '.$quotedTable.' ('.$columnSql.') VALUES ('.implode(', ', $values).');'."\n");
+                }
+                $statement->closeCursor();
+
+                if ($bufferedAttribute !== null && $previousBuffered !== null) {
+                    try { $pdo->setAttribute($bufferedAttribute, $previousBuffered); } catch (Throwable) {}
+                    $previousBuffered = null;
+                }
             }
+
+            $this->writeAll($handle, "SET FOREIGN_KEY_CHECKS=1;\n");
+            $pdo->commit();
+            $transactionStarted = false;
+        } catch (Throwable $exception) {
+            if ($transactionStarted && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $exception;
         } finally {
+            if ($bufferedAttribute !== null && $previousBuffered !== null) {
+                try { $pdo->setAttribute($bufferedAttribute, $previousBuffered); } catch (Throwable) {}
+            }
             fclose($handle);
         }
 
         if (! is_file($target) || filesize($target) < 20) {
-            throw new RuntimeException('Hasil dump database kosong atau tidak lengkap.');
+            throw new RuntimeException('Hasil ekspor database kosong atau tidak lengkap.');
         }
 
-        return ['driver' => $driver, 'database_file' => $target, 'file_count' => 1];
+        return ['driver' => $driver, 'database_file' => $target, 'tables' => $tables];
     }
 
-    private function buildTarArchive(string $tarPath, string $workDir, array $databaseInfo): int
+
+    /** Put referenced/parent tables before dependent tables for reliable CREATE TABLE restore order. */
+    private function orderTablesByForeignKeys(PDO $pdo, array $tables): array
     {
-        $archive = new PharData($tarPath);
-        $databaseArchivePath = $databaseInfo['driver'] === 'sqlite' ? 'database/database.sqlite' : 'database/database.sql';
-        $archive->addFile($databaseInfo['database_file'], $databaseArchivePath);
+        $known = array_fill_keys($tables, true);
+        $dependencies = array_fill_keys($tables, []);
+        try {
+            $rows = $pdo->query('SELECT TABLE_NAME, REFERENCED_TABLE_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL')->fetchAll(PDO::FETCH_NUM);
+            foreach ($rows as $row) {
+                $table = (string) ($row[0] ?? '');
+                $parent = (string) ($row[1] ?? '');
+                if ($table !== '' && $parent !== '' && isset($known[$table]) && isset($known[$parent]) && $table !== $parent) {
+                    $dependencies[$table][$parent] = true;
+                }
+            }
+        } catch (Throwable $exception) {
+            Log::notice('Tidak dapat membaca urutan foreign key; memakai urutan tabel dari MySQL.', ['message' => $exception->getMessage()]);
+            return $tables;
+        }
 
-        $privateRoot = (string) config('filesystems.disks.local.root', storage_path('app/private'));
-        $publicRoot = (string) config('filesystems.disks.public.root', storage_path('app/public'));
+        $ordered = [];
+        $remaining = array_fill_keys($tables, true);
+        while ($remaining !== []) {
+            $ready = [];
+            foreach ($tables as $table) {
+                if (! isset($remaining[$table])) continue;
+                $waiting = false;
+                foreach (array_keys($dependencies[$table]) as $parent) {
+                    if (isset($remaining[$parent])) { $waiting = true; break; }
+                }
+                if (! $waiting) $ready[] = $table;
+            }
+            if ($ready === []) {
+                throw new RuntimeException('Database memiliki relasi foreign key siklik. Urutan tabel tidak dapat ditentukan dengan aman untuk backup PHP-native.');
+            }
+            foreach ($ready as $table) {
+                $ordered[] = $table;
+                unset($remaining[$table]);
+            }
+        }
+        return $ordered;
+    }
+
+    private function quoteIdentifier(string $identifier): string
+    {
+        return '`'.str_replace('`', '``', $identifier).'`';
+    }
+
+    private function mysqlLiteral(PDO $pdo, mixed $value, string $columnType): string
+    {
+        if ($value === null) return 'NULL';
+        $type = strtolower($columnType);
+        if (preg_match('/(tiny|medium|long)?blob|varbinary|\bbinary\b|\bbit\b/', $type)) {
+            return '0x'.bin2hex((string) $value);
+        }
+        if (preg_match('/^(tinyint|smallint|mediumint|int|bigint|decimal|numeric|float|double|real|year)/', $type)
+            && is_numeric($value)) {
+            return (string) $value;
+        }
+        $quoted = $pdo->quote((string) $value);
+        if (! is_string($quoted)) {
+            throw new RuntimeException('Nilai database tidak dapat diubah menjadi SQL yang aman.');
+        }
+        return $quoted;
+    }
+
+    private function buildZipArchive(string $zipPath, array $databaseInfo): int
+    {
+        if (! class_exists(ZipArchive::class)) {
+            throw new RuntimeException('Ekstensi PHP ZipArchive wajib aktif untuk backup pada hosting ini.');
+        }
+        $archive = new ZipArchive();
+        $opened = $archive->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($opened !== true) {
+            throw new RuntimeException('File ZIP snapshot tidak dapat dibuat (kode '.$opened.').');
+        }
+
         $fileCount = 1;
+        try {
+            $databaseArchivePath = $databaseInfo['driver'] === 'sqlite' ? 'database/database.sqlite' : 'database/database.sql';
+            if (! $archive->addFile($databaseInfo['database_file'], $databaseArchivePath)) {
+                throw new RuntimeException('File database gagal ditambahkan ke ZIP.');
+            }
 
-        $this->addDirectory($archive, rtrim($privateRoot, '/\\').'/arsip', 'storage/private/arsip', $fileCount);
-        $this->addDirectory($archive, rtrim($publicRoot, '/\\'), 'storage/public', $fileCount);
+            $privateRoot = (string) config('filesystems.disks.local.root', storage_path('app/private'));
+            $publicRoot = (string) config('filesystems.disks.public.root', storage_path('app/public'));
+            $this->addDirectoryToZip($archive, rtrim($privateRoot, '/\\').'/arsip', 'storage/private/arsip', $fileCount);
+            $this->addDirectoryToZip($archive, rtrim($publicRoot, '/\\'), 'storage/public', $fileCount);
 
-        $manifest = [
-            'format' => self::FORMAT,
-            'created_at' => now()->toIso8601String(),
-            'app_name' => config('app.name'),
-            'database_driver' => $databaseInfo['driver'],
-            'file_count' => $fileCount,
-            'includes' => ['database', 'storage/private/arsip', 'storage/public'],
-        ];
-        $archive->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        unset($archive);
+            $manifest = [
+                'format' => self::FORMAT,
+                'created_at' => now()->toIso8601String(),
+                'app_name' => config('app.name'),
+                'database_driver' => $databaseInfo['driver'],
+                'database_tables' => $databaseInfo['tables'] ?? [],
+                'file_count' => $fileCount,
+                'includes' => ['database', 'storage/private/arsip', 'storage/public'],
+                'engine' => 'php-native-zip-pdo',
+                'database_objects' => 'tables-only-no-views-triggers-routines',
+            ];
+            if (! $archive->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR))) {
+                throw new RuntimeException('Manifest backup gagal ditambahkan.');
+            }
+        } catch (Throwable $exception) {
+            $archive->close();
+            @unlink($zipPath);
+            throw $exception;
+        }
 
+        if (! $archive->close()) {
+            throw new RuntimeException('ZIP snapshot gagal diselesaikan. Periksa ruang penyimpanan sementara.');
+        }
+        if (! is_file($zipPath) || filesize($zipPath) < 100) {
+            throw new RuntimeException('ZIP snapshot kosong atau tidak lengkap.');
+        }
         return $fileCount;
     }
 
-    private function addDirectory(PharData $archive, string $source, string $archivePrefix, int &$fileCount): void
+    private function addDirectoryToZip(ZipArchive $archive, string $source, string $archivePrefix, int &$fileCount): void
     {
-        if (! is_dir($source)) {
-            $archive->addEmptyDir($archivePrefix);
-            return;
-        }
-
         $archive->addEmptyDir($archivePrefix);
+        if (! is_dir($source)) return;
+
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST
         );
-
         foreach ($iterator as $item) {
+            if ($item->isLink()) continue;
             $fullPath = $item->getPathname();
-            if ($item->isLink()) {
-                continue;
-            }
-
             $relative = ltrim(substr($fullPath, strlen(rtrim($source, '/\\'))), '/\\');
-            if ($relative === '' || str_contains($relative, "\0")) {
-                continue;
-            }
+            if ($relative === '' || str_contains($relative, "\0")) continue;
             $localName = $archivePrefix.'/'.$relative;
-
             if ($item->isDir()) {
                 $archive->addEmptyDir($localName);
             } elseif ($item->isFile()) {
-                $archive->addFile($fullPath, $localName);
+                if (! $archive->addFile($fullPath, $localName)) {
+                    throw new RuntimeException('File gagal ditambahkan ke ZIP: '.$relative);
+                }
                 $fileCount++;
             }
         }
+    }
+
+    /** Safely extract a PHP-native ZIP snapshot; no shell or Phar is required. */
+    private function extractZipSnapshot(string $zipPath, string $extractDir): void
+    {
+        $zip = new ZipArchive();
+        $opened = $zip->open($zipPath);
+        if ($opened !== true) {
+            throw new RuntimeException('ZIP snapshot tidak dapat dibuka.');
+        }
+        try {
+            $maxEntries = (int) config('backup.max_restore_entries', 50000);
+            $maxBytes = (int) config('backup.max_restore_uncompressed_bytes', 10737418240);
+            if ($zip->numFiles > $maxEntries) {
+                throw new RuntimeException('Backup memiliki terlalu banyak item.');
+            }
+
+            $totalBytes = 0;
+            for ($index = 0; $index < $zip->numFiles; $index++) {
+                $stat = $zip->statIndex($index);
+                if (! is_array($stat)) throw new RuntimeException('Metadata item ZIP tidak dapat dibaca.');
+                $name = str_replace('\\', '/', (string) ($stat['name'] ?? ''));
+                if ($name === '' || str_starts_with($name, '/') || preg_match('#(^|/)\.\.?(/|$)#', $name) || str_contains($name, "\0")) {
+                    throw new RuntimeException('ZIP berisi jalur file yang tidak aman.');
+                }
+                $allowed = in_array(rtrim($name, '/'), [
+                    'manifest.json', 'database', 'database/database.sql', 'database/database.sqlite',
+                    'storage', 'storage/private', 'storage/private/arsip', 'storage/public',
+                ], true)
+                    || str_starts_with($name, 'storage/private/arsip/')
+                    || str_starts_with($name, 'storage/public/');
+                if (! $allowed) throw new RuntimeException('ZIP berisi item di luar struktur backup SIMPAN-AWAS.');
+
+                $totalBytes += (int) ($stat['size'] ?? 0);
+                if ($totalBytes > $maxBytes) throw new RuntimeException('Ukuran hasil ekstraksi backup melebihi batas konfigurasi.');
+
+                $opsys = 0;
+                $attributes = 0;
+                if ($zip->getExternalAttributesIndex($index, $opsys, $attributes) && $opsys === ZipArchive::OPSYS_UNIX) {
+                    $fileType = ($attributes >> 16) & 0170000;
+                    if ($fileType === 0120000) throw new RuntimeException('ZIP berisi symbolic link yang tidak diizinkan.');
+                }
+            }
+
+            if ($zip->locateName('manifest.json') === false) throw new RuntimeException('Manifest backup tidak ditemukan di ZIP.');
+            if (! $zip->extractTo($extractDir)) throw new RuntimeException('Isi ZIP gagal diekstrak.');
+        } finally {
+            $zip->close();
+        }
+    }
+
+    private function importMysqlSqlFile(string $source): void
+    {
+        $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $handle = fopen($source, 'rb');
+        if ($handle === false) throw new RuntimeException('Dump database tidak dapat dibaca.');
+
+        $pdo->exec('SET FOREIGN_KEY_CHECKS=0');
+        try {
+            $buffer = '';
+            $quote = null;
+            $escaped = false;
+            $lineComment = false;
+            $blockComment = false;
+            $previous = '';
+            $delimiter = ';';
+
+            while (($char = fgetc($handle)) !== false) {
+                if ($lineComment) {
+                    if ($char === "\n") { $lineComment = false; $buffer .= "\n"; }
+                    continue;
+                }
+                if ($blockComment) {
+                    if ($previous === '*' && $char === '/') { $blockComment = false; $previous = ''; }
+                    else { $previous = $char; }
+                    continue;
+                }
+                if ($quote !== null) {
+                    $buffer .= $char;
+                    if ($escaped) { $escaped = false; continue; }
+                    if ($char === '\\') { $escaped = true; continue; }
+                    if ($char === $quote) $quote = null;
+                    continue;
+                }
+
+                if ($char === "'") { $quote = "'"; $buffer .= $char; continue; }
+                if ($char === '"') { $quote = '"'; $buffer .= $char; continue; }
+                if ($char === '`') { $quote = '`'; $buffer .= $char; continue; }
+                if ($char === '#') { $lineComment = true; continue; }
+                if ($char === '/') {
+                    $next = fgetc($handle);
+                    if ($next === '*') { $blockComment = true; $previous = ''; continue; }
+                    $buffer .= $char;
+                    if ($next !== false) $buffer .= $next;
+                    continue;
+                }
+                if ($char === '-') {
+                    $next = fgetc($handle);
+                    if ($next === '-') {
+                        $after = fgetc($handle);
+                        if ($after === false) { $lineComment = true; continue; }
+                        if ($after === "\n") { $buffer .= "\n"; continue; }
+                        if (ctype_space($after)) { $lineComment = true; continue; }
+                        $buffer .= '--'.$after;
+                        continue;
+                    }
+                    $buffer .= '-';
+                    if ($next !== false) $buffer .= $next;
+                    continue;
+                }
+
+                if ($char === "\n" && trim($buffer) === '') { $buffer = ''; continue; }
+                if ($char === "\n" && preg_match('/^\s*DELIMITER\s+(.+)\s*$/i', trim($buffer), $match)) {
+                    $delimiter = trim($match[1]);
+                    if ($delimiter === '') throw new RuntimeException('Direktif delimiter SQL tidak valid.');
+                    $buffer = '';
+                    continue;
+                }
+
+                $buffer .= $char;
+                if ($delimiter === ';' && $char === ';') {
+                    $statement = trim(substr($buffer, 0, -1));
+                    $buffer = '';
+                    $this->executeRestoredSqlStatement($pdo, $statement);
+                } elseif ($delimiter !== '' && str_ends_with($buffer, $delimiter)) {
+                    $statement = trim(substr($buffer, 0, -strlen($delimiter)));
+                    $buffer = '';
+                    $this->executeRestoredSqlStatement($pdo, $statement);
+                }
+            }
+
+            $remaining = trim($buffer);
+            if ($remaining !== '') $this->executeRestoredSqlStatement($pdo, rtrim($remaining, ';'));
+        } finally {
+            fclose($handle);
+            $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
+        }
+    }
+
+    private function executeRestoredSqlStatement(PDO $pdo, string $statement): void
+    {
+        $statement = trim($statement);
+        if ($statement === '') return;
+        if (preg_match('/^(DELIMITER|LOCK TABLES|UNLOCK TABLES|CREATE DATABASE|USE\s)/i', $statement)) {
+            if (stripos($statement, 'DELIMITER') === 0) {
+                throw new RuntimeException('Backup SQL lama berisi stored procedure/trigger dengan delimiter khusus. Impor PHP murni tidak dapat memulihkan routine tersebut.');
+            }
+            return;
+        }
+        if (preg_match('/^SET\s+/i', $statement)
+            && ! preg_match('/^SET\s+(NAMES|FOREIGN_KEY_CHECKS)/i', $statement)) {
+            return;
+        }
+        if (preg_match('/^ALTER\s+TABLE\s+.+\s+(DISABLE|ENABLE)\s+KEYS$/i', $statement)) return;
+        $pdo->exec($statement);
+    }
+
+    private function restoreDatabase(string $extractDir, string $driver, array $backupTables = []): void
+    {
+        if ($driver === 'sqlite') {
+            $source = $extractDir.'/database/database.sqlite';
+            if (! is_file($source)) throw new RuntimeException('File database SQLite tidak ditemukan di backup.');
+            $connection = (array) config('database.connections.sqlite', []);
+            $destination = (string) ($connection['database'] ?? '');
+            if ($destination === '' || $destination === ':memory:') throw new RuntimeException('Target SQLite tidak dapat dipulihkan.');
+            if (! str_starts_with($destination, DIRECTORY_SEPARATOR)) $destination = base_path($destination);
+            File::ensureDirectoryExists(dirname($destination));
+            if (! copy($source, $destination)) throw new RuntimeException('Database SQLite gagal dipulihkan.');
+            return;
+        }
+
+        $source = $extractDir.'/database/database.sql';
+        if (! is_file($source)) throw new RuntimeException('Dump database tidak ditemukan di dalam backup.');
+        if (! in_array($driver, ['mysql', 'mariadb'], true)) throw new RuntimeException('Driver database tidak didukung untuk pemulihan PHP murni.');
+        $this->importMysqlSqlFile($source);
     }
 
     private function encryptFile(string $source, string $destination, string $secret): void
@@ -518,17 +843,19 @@ class BackupService
         }
     }
 
-    private function decryptFile(string $source, string $destination, string $secret): void
+    private function decryptFile(string $source, string $destination, string $secret): string
     {
         $input = fopen($source, 'rb');
         $output = fopen($destination, 'wb');
         if (! $input || ! $output) {
+            if (is_resource($input)) fclose($input);
+            if (is_resource($output)) fclose($output);
             throw new RuntimeException('File backup terenkripsi tidak dapat dibuka.');
         }
 
         try {
             $magic = $this->readExact($input, 5);
-            if ($magic !== self::MAGIC) {
+            if (! in_array($magic, [self::MAGIC, self::LEGACY_MAGIC], true)) {
                 throw new RuntimeException('Format file backup tidak dikenali.');
             }
             $salt = $this->readExact($input, 16);
@@ -541,12 +868,8 @@ class BackupService
 
             while (! feof($input)) {
                 $lengthBytes = fread($input, 4);
-                if ($lengthBytes === '' || $lengthBytes === false) {
-                    break;
-                }
-                if (strlen($lengthBytes) !== 4) {
-                    throw new RuntimeException('Backup terenkripsi terpotong.');
-                }
+                if ($lengthBytes === '' || $lengthBytes === false) break;
+                if (strlen($lengthBytes) !== 4) throw new RuntimeException('Backup terenkripsi terpotong.');
                 $length = unpack('Nlength', $lengthBytes)['length'] ?? 0;
                 $counterBytes = pack('N', $counter);
 
@@ -561,23 +884,17 @@ class BackupService
                     break;
                 }
 
-                if ($length < 1 || $length > $maxChunk) {
-                    throw new RuntimeException('Ukuran blok backup tidak valid.');
-                }
-
+                if ($length < 1 || $length > $maxChunk) throw new RuntimeException('Ukuran blok backup tidak valid.');
                 $cipher = $this->readExact($input, $length);
                 $tag = $this->readExact($input, 16);
                 $plain = openssl_decrypt($cipher, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $noncePrefix.$counterBytes, $tag, $header.$counterBytes);
-                if ($plain === false) {
-                    throw new RuntimeException('Autentikasi enkripsi gagal. Kunci backup salah atau file berubah.');
-                }
+                if ($plain === false) throw new RuntimeException('Autentikasi enkripsi gagal. Kunci backup salah atau file berubah.');
                 $this->writeAll($output, $plain);
                 $counter++;
             }
 
-            if ($counter === 0 || ! $ended) {
-                throw new RuntimeException('Backup tidak lengkap atau tidak memiliki penanda akhir autentik.');
-            }
+            if ($counter === 0 || ! $ended) throw new RuntimeException('Backup tidak lengkap atau tidak memiliki penanda akhir autentik.');
+            return $magic;
         } finally {
             fclose($input);
             fclose($output);
@@ -612,74 +929,7 @@ class BackupService
         }
     }
 
-    private function restoreDatabase(string $extractDir, string $driver): void
-    {
-        if ($driver === 'sqlite') {
-            $source = $extractDir.'/database/database.sqlite';
-            if (! is_file($source)) {
-                throw new RuntimeException('File database SQLite tidak ditemukan di backup.');
-            }
-            $connection = (array) config('database.connections.sqlite', []);
-            $destination = (string) ($connection['database'] ?? '');
-            if ($destination === '' || $destination === ':memory:') {
-                throw new RuntimeException('Target SQLite tidak dapat dipulihkan.');
-            }
-            if (! str_starts_with($destination, DIRECTORY_SEPARATOR)) {
-                $destination = base_path($destination);
-            }
-            File::ensureDirectoryExists(dirname($destination));
-            if (! copy($source, $destination)) {
-                throw new RuntimeException('Database SQLite gagal dipulihkan.');
-            }
 
-            return;
-        }
-
-        $source = $extractDir.'/database/database.sql';
-        if (! is_file($source)) {
-            throw new RuntimeException('Dump database tidak ditemukan di dalam backup.');
-        }
-
-        $connection = (array) config('database.connections.'.config('database.default'), []);
-        $database = (string) ($connection['database'] ?? '');
-        if ($database === '') {
-            throw new RuntimeException('Database target belum dikonfigurasi.');
-        }
-
-        $command = [
-            (string) config('backup.mysql_binary', 'mysql'),
-            '--default-character-set=utf8mb4',
-        ];
-        if (! empty($connection['socket'])) {
-            $command[] = '--socket='.(string) $connection['socket'];
-        } else {
-            $command[] = '--host='.(string) ($connection['host'] ?? '127.0.0.1');
-            $command[] = '--port='.(string) ($connection['port'] ?? 3306);
-        }
-        if (! empty($connection['username'])) {
-            $command[] = '--user='.(string) $connection['username'];
-        }
-        $command[] = $database;
-
-        $environment = [];
-        if (isset($connection['password']) && $connection['password'] !== '') {
-            $environment['MYSQL_PWD'] = (string) $connection['password'];
-        }
-        $input = fopen($source, 'rb');
-        if ($input === false) {
-            throw new RuntimeException('Dump database tidak dapat dibaca.');
-        }
-
-        try {
-            $process = new Process($command, base_path(), $environment, $input, (int) config('backup.process_timeout', 1800));
-            $process->run();
-            if (! $process->isSuccessful()) {
-                throw new RuntimeException('Pemulihan database gagal. Periksa binary mysql dan hak akses database.');
-            }
-        } finally {
-            fclose($input);
-        }
-    }
 
     private function restoreStorageDirectories(string $extractDir): void
     {
@@ -780,11 +1030,15 @@ class BackupService
 
     private function assertRuntimeRequirements(): void
     {
-        if (! class_exists(PharData::class) || ! extension_loaded('zlib')) {
-            throw new RuntimeException('Ekstensi PHP Phar dan zlib wajib aktif pada hosting.');
+        if (! class_exists(ZipArchive::class)) {
+            throw new RuntimeException('Ekstensi PHP ZipArchive wajib aktif. Hubungi hosting untuk mengaktifkan ekstensi zip.');
         }
-        if (! function_exists('openssl_encrypt') || ! function_exists('openssl_decrypt')) {
+        if (! extension_loaded('openssl') || ! function_exists('openssl_encrypt') || ! function_exists('openssl_decrypt')) {
             throw new RuntimeException('Ekstensi PHP OpenSSL wajib aktif pada hosting.');
+        }
+        $driver = (string) config('database.connections.'.config('database.default').'.driver', config('database.default'));
+        if (in_array($driver, ['mysql', 'mariadb'], true) && ! extension_loaded('pdo_mysql')) {
+            throw new RuntimeException('Ekstensi PDO MySQL wajib aktif pada hosting.');
         }
     }
 

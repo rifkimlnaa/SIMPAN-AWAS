@@ -1,0 +1,25 @@
+PATCH BACKUP PHP-NATIVE SIMPAN-AWAS
+
+File dalam paket ini: 
+- app/Http/Controllers/BackupController.php
+- app/Http/Controllers/BackupGoogleDriveController.php
+- app/Http/Controllers/BackupStorageController.php
+- app/Services/BackupService.php
+- app/Services/BackupPackageService.php
+- app/Services/BackupStorageUsageService.php
+- app/Services/GoogleDriveBackupService.php
+- config/backup.php
+- config/services.php
+- routes/backup.php
+- routes/backup-schedule.php
+- routes/console.php
+- resources/views/backup/index.blade.php
+- .env.backup-google-cpanel.example
+- PETUNJUK-INSTALASI.txt
+- PETUNJUK-CPANEL-PHP-NATIVE.txt
+- README-BACKUP.md
+- docs/BACKUP-GOOGLE-DRIVE-CPANEL.md
+
+Tidak menyertakan .env, .git, vendor, node_modules, database aktif, storage pengguna, atau kredensial.
+Tidak ada migrasi database baru.
+Pertahankan BACKUP_ENCRYPTION_KEY yang sudah tersimpan.

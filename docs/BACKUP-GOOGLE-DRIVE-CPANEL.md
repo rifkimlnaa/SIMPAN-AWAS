@@ -9,6 +9,15 @@
 - Upload manual per backup dan opsi mengirim backup manual ke Drive; backup terjadwal diunggah otomatis bila `BACKUP_GOOGLE_DRIVE_AUTO_UPLOAD=true` dan Drive terhubung.
 - Perintah `backup:import-zip` untuk mendaftarkan snapshot dari paket ZIP yang diunduh dari komputer atau Google Drive.
 
+
+## Kompatibilitas shared hosting tanpa fungsi shell
+
+Mesin backup pada update PHP-native ini tidak memakai `proc_open`, `exec`, `shell_exec`, `system`, `passthru`, Symfony Process, `mysqldump`, atau binary `mysql`. Ekspor/impor MySQL dilakukan melalui PDO; snapshot dan paket download menggunakan ZipArchive; enkripsi menggunakan OpenSSL. Scheduler mendaftarkan callback `Schedule::call` agar tugas backup berjalan langsung di proses `artisan schedule:run`.
+
+Ekstensi yang perlu tersedia: `zip`, `openssl`, dan `pdo_mysql` (untuk MySQL). cURL diperlukan untuk koneksi Google Drive dan API cPanel. Backup baru memakai format SAWB2 + ZIP dan tidak memerlukan Phar. Restore backup lama SAWB1/TAR.GZ tetap memerlukan ekstensi Phar.
+
+Mesin ekspor saat ini mencakup tabel dan data MySQL. Jika database memiliki VIEW, TRIGGER, atau ROUTINE, proses backup akan berhenti dengan pesan jelas agar tidak membuat backup yang tidak lengkap.
+
 ## 1. Pengaturan cPanel storage quota (opsional)
 
 Buat API Token di cPanel: **Security → Manage API Tokens**. Simpan token sebagai rahasia. Tambahkan ke `.env` (jangan ke Git):
@@ -44,13 +53,13 @@ Aplikasi meminta scope `drive.file` dan `access_type=offline`. Google dapat memb
 
 ## 3. Jadwal otomatis cPanel
 
-File `routes/backup-schedule.php` sekarang diregistrasikan dari `routes/console.php`. Tambahkan satu cron job di cPanel → Cron Jobs, setiap menit:
+File `routes/backup-schedule.php` diregistrasikan dari `routes/console.php`. Jadwal menggunakan `Schedule::call` (bukan `Schedule::command`) agar tidak membutuhkan proc_open. Tambahkan satu cron job di cPanel → Cron Jobs, setiap menit:
 
 ```cron
-* * * * * cd /home/CPANELUSER/PATH/TO/arsip-hp3s && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /home/CPANELUSER/PATH/TO/arsip-hp3s && /PATH/KE/PHP-CLI artisan schedule:run >> /dev/null 2>&1
 ```
 
-Sesuaikan path PHP dan folder sesuai cPanel. Periksa `php artisan schedule:list` untuk memastikan jadwal terdaftar. Jadwal backup: harian 01.00 WIB, mingguan Minggu 02.00 WIB, bulanan tanggal 1 pukul 03.00 WIB; cleanup 04.00 WIB.
+Ganti `/PATH/KE/PHP-CLI` dengan binary PHP CLI yang benar dari penyedia hosting. Jangan otomatis memakai `/usr/bin/php` jika perintah itu mengarah ke php-cgi; minta host memastikan path PHP CLI. Cron menjalankan PHP CLI langsung; tidak memanggil fungsi shell dari dalam PHP. Periksa `php artisan schedule:list` untuk memastikan jadwal terdaftar. Jadwal backup: harian 01.00 WIB, mingguan Minggu 02.00 WIB, bulanan tanggal 1 pukul 03.00 WIB; cleanup 04.00 WIB.
 
 ## 4. ZIP dan pemulihan
 

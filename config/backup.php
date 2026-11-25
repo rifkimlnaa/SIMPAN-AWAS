@@ -1,26 +1,20 @@
 <?php
 
 return [
-    /*
-    | Backup files are encrypted before they are written to this disk.
-    | Use "local" for private hosting storage or "s3" for off-site object storage.
-    */
+    /* File backup dienkripsi sebelum disimpan pada disk ini. */
     'disk' => env('BACKUP_DISK', 'local'),
     'path' => env('BACKUP_PATH', 'backups'),
-
-    // Generate with: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
-    // Keep this key outside the repository and keep a separate secure copy.
     'encryption_key' => env('BACKUP_ENCRYPTION_KEY'),
 
-    'mysql_dump_binary' => env('BACKUP_MYSQLDUMP_BINARY', 'mysqldump'),
-    'mysql_binary' => env('BACKUP_MYSQL_BINARY', 'mysql'),
-    'process_timeout' => (int) env('BACKUP_PROCESS_TIMEOUT', 1800),
+    // Mesin PHP-native untuk hosting yang menonaktifkan seluruh fungsi shell.
     'chunk_size' => 1048576,
     'max_import_bytes' => (int) env('BACKUP_MAX_IMPORT_BYTES', 2147483648),
+    'max_restore_entries' => (int) env('BACKUP_MAX_RESTORE_ENTRIES', 50000),
+    'max_restore_uncompressed_bytes' => (int) env('BACKUP_MAX_RESTORE_BYTES', 10737418240),
 
-    // Opsional: API token cPanel untuk kuota akun yang akurat (bukan free space filesystem server).
+    // API token cPanel untuk membaca kuota akun (opsional).
     'cpanel' => [
-        'api_url' => env('BACKUP_CPANEL_API_URL'), // contoh: https://server.domain.tld:2083
+        'api_url' => env('BACKUP_CPANEL_API_URL'),
         'username' => env('BACKUP_CPANEL_USERNAME'),
         'api_token' => env('BACKUP_CPANEL_API_TOKEN'),
     ],
