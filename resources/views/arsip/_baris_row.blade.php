@@ -2,7 +2,7 @@
     <div class="mb-3 flex items-center justify-between">
         <strong class="text-sm text-slate-800" data-baris-title>{{ $butir }}</strong>
         <button type="button" class="btn-icon btn-icon-danger" data-baris-remove aria-label="Hapus baris ini" title="Hapus baris ini">
-            <i data-lucide="x" class="h-4 w-4"></i>
+            <i class="ti ti-x h-4 w-4"></i>
         </button>
     </div>
 

@@ -7,7 +7,7 @@
 <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <p class="text-sm text-slate-500">Jenis permohonan yang dikelompokkan dalam arsip.</p>
     @if ($admin)
-        <a class="btn btn-primary" href="{{ route('kategori.create') }}"><i data-lucide="plus" class="h-4 w-4"></i> Tambah kategori</a>
+        <a class="btn btn-primary" href="{{ route('kategori.create') }}"><i class="ti ti-plus h-4 w-4"></i> Tambah kategori</a>
     @endif
 </div>
 
@@ -35,13 +35,13 @@
                         @if ($admin)
                             <td>
                                 <div class="flex items-center gap-1.5">
-                                    <a class="btn-icon" href="{{ route('kategori.edit', $k) }}" title="Edit" aria-label="Edit kategori"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+                                    <a class="btn-icon" href="{{ route('kategori.edit', $k) }}" title="Edit" aria-label="Edit kategori"><i class="ti ti-pencil h-4 w-4"></i></a>
                                     @unless ($k->isUtama())
                                         <form method="POST" action="{{ route('kategori.destroy', $k) }}" class="js-confirm-delete"
                                               data-message="Kategori {{ $k->nama }} akan dihapus permanen.">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn-icon btn-icon-danger" title="Hapus" aria-label="Hapus kategori"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+                                            <button type="submit" class="btn-icon btn-icon-danger" title="Hapus" aria-label="Hapus kategori"><i class="ti ti-trash h-4 w-4"></i></button>
                                         </form>
                                     @endunless
                                 </div>

@@ -80,7 +80,7 @@
         @error('dokumen')<p class="err mt-2">{{ $message }}</p>@enderror
 
         <button type="button" class="btn btn-light btn-sm mt-4" data-pspp03-add-custom>
-            <i data-lucide="plus" class="h-4 w-4"></i> Tambah dokumen lainnya
+            <i class="ti ti-plus h-4 w-4"></i> Tambah dokumen lainnya
         </button>
         <p class="hint mt-2">Gunakan pilihan ini jika Pemohon membawa dokumen tambahan di luar enam jenis dokumen di atas.</p>
     </div>

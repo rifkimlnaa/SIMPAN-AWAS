@@ -17,14 +17,14 @@
                        class="file-input @error('foto') border-red-400 @enderror">
                 <p class="hint">JPG, PNG, atau WEBP, maksimal 2 MB.</p>
                 @error('foto')<p class="err">{{ $message }}</p>@enderror
-                <button type="submit" class="btn btn-primary btn-sm mt-3"><i data-lucide="upload" class="h-4 w-4"></i> Unggah foto</button>
+                <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="ti ti-upload h-4 w-4"></i> Unggah foto</button>
             </form>
 
             @if ($user->foto)
                 <form method="POST" action="{{ route('profil.foto.destroy') }}" class="js-confirm-delete" data-message="Foto profil Anda akan dihapus.">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger-ghost btn-sm"><i data-lucide="trash-2" class="h-4 w-4"></i> Hapus foto</button>
+                    <button type="submit" class="btn btn-danger-ghost btn-sm"><i class="ti ti-trash h-4 w-4"></i> Hapus foto</button>
                 </form>
             @endif
         </div>
@@ -54,7 +54,7 @@
         </div>
 
         <div class="flex justify-end border-t border-slate-100 pt-5">
-            <button type="submit" class="btn btn-primary"><i data-lucide="check" class="h-4 w-4"></i> Simpan profil</button>
+            <button type="submit" class="btn btn-primary"><i class="ti ti-check h-4 w-4"></i> Simpan profil</button>
         </div>
     </form>
 
@@ -84,7 +84,7 @@
         <p class="hint !mt-0">Minimal 12 karakter, kombinasi huruf dan angka.</p>
 
         <div class="flex justify-end border-t border-slate-100 pt-5">
-            <button type="submit" class="btn btn-primary"><i data-lucide="shield-check" class="h-4 w-4"></i> Ganti password</button>
+            <button type="submit" class="btn btn-primary"><i class="ti ti-shield-check h-4 w-4"></i> Ganti password</button>
         </div>
     </form>
 </div>

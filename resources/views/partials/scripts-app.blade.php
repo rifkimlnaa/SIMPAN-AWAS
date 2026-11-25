@@ -27,8 +27,7 @@
                 lengthMenu: [10, 25, 50, 100],
                 order: [],
                 columnDefs: [{ targets: 'no-sort', orderable: false, searchable: false }],
-                drawCallback: function () { if (window.lucide) window.lucide.createIcons(); }
-            });
+                            });
 
             if (numbered) {
                 // Nomor urut mengikuti hasil pencarian/pengurutan.
@@ -81,7 +80,6 @@
 
         saksiAdd.addEventListener('click', function () {
             saksiList.insertAdjacentHTML('beforeend', saksiTemplate.innerHTML.split('__INDEX__').join(String(berikutnya++)));
-            if (window.lucide) window.lucide.createIcons();
             segarkan();
             var baru = saksiList.querySelectorAll('[data-saksi-row]');
             var input = baru[baru.length - 1].querySelector('input');
@@ -152,7 +150,6 @@
                 if (hidden) hidden.value = presetLabel || '';
                 if (title) title.textContent = presetLabel || '';
             }
-            if (window.lucide) window.lucide.createIcons();
             pspp03Refresh();
             if (focus) {
                 var target = row.querySelector('[data-pspp03-kind-input], textarea');
@@ -251,7 +248,6 @@
 
         var tambahBaris = function (fokus) {
             barisList.insertAdjacentHTML('beforeend', barisTemplate.innerHTML.split('__INDEX__').join(String(nextBaris++)));
-            if (window.lucide) window.lucide.createIcons();
             segarkanBaris();
             if (fokus) {
                 var rows = barisList.querySelectorAll('[data-baris-row]');

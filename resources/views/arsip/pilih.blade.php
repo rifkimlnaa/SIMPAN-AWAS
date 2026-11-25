@@ -13,19 +13,19 @@
     {{-- Dua kategori utama: tiap kartu berisi daftar jenis arsip --}}
     <div class="grid gap-4 lg:grid-cols-2">
         @foreach ($utama as $k)
-            <section class="card p-5">
+            <section class="card category-panel p-5">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="badge">{{ $k->nama }}</span>
+                    <span class="badge category-label">{{ $k->nama }}</span>
                     <span class="text-xs text-slate-400">{{ number_format($k->arsips_count, 0, ',', '.') }} arsip</span>
                 </div>
                 <p class="mt-3 text-sm text-slate-600">{{ $k->keterangan ?: 'Tanpa keterangan.' }}</p>
 
                 <p class="mt-4 text-xs font-medium text-slate-500">Pilih jenis arsip</p>
-                <div class="mt-2 grid gap-2">
+                <div class="mt-2">
                     @foreach ($k->jenisArsipList() as $kunci => $j)
                         <a href="{{ route('arsip.create', ['kategori' => $k->slug, 'jenis' => $kunci]) }}"
-                           class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 transition hover:border-brand-500 hover:bg-brand-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-                            <i data-lucide="{{ $j['ikon'] ?? 'file-text' }}" class="h-4 w-4 shrink-0 text-brand-700"></i>
+                           class="archive-type-row flex items-center gap-3 border-b border-slate-200 px-1 py-3 text-sm text-slate-800 transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                            <i class="ti ti-{{ $j['ikon'] ?? 'file-text' }} h-4 w-4 shrink-0 text-brand-700"></i>
                             <span class="flex-1 font-medium">{{ $j['label'] }}</span>
                             @if (! empty($j['singkat']))<span class="badge badge-gray">{{ $j['singkat'] }}</span>@endif
                         </a>
@@ -42,7 +42,7 @@
             @foreach ($tambahan as $k)
                 <a href="{{ route('arsip.create', ['kategori' => $k->slug]) }}"
                    class="card block p-5 transition hover:border-brand-500 hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-                    <span class="badge">{{ $k->nama }}</span>
+                    <span class="badge category-label">{{ $k->nama }}</span>
                     <p class="mt-3 min-h-10 text-sm text-slate-600">{{ $k->keterangan ?: 'Tanpa keterangan.' }}</p>
                     <p class="mt-3 text-xs text-slate-400">{{ number_format($k->arsips_count, 0, ',', '.') }} arsip</p>
                 </a>

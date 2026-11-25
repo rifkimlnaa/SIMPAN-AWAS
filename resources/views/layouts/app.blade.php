@@ -1,44 +1,57 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id">
 <head>
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css">
     @include('partials.head')
-    <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}?v={{ @filemtime(public_path('css/sidebar.css')) }}">
+
     <title>@yield('title', 'Dashboard') | {{ config('arsip.nama') }}</title>
 </head>
-<body class="app-body h-full bg-slate-50 font-sans text-slate-700 antialiased"
-      x-data="{ sidebar: false }"
-      @keydown.escape.window="sidebar = false"
-      :class="{ 'no-scroll': sidebar }">
+<body class="tb-body">
+    <div class="tb-page">
+        @include('partials.sidebar')
 
-    <div x-show="sidebar" x-cloak x-transition.opacity class="fixed inset-0 z-30 bg-black/50 lg:hidden" @click="sidebar = false"></div>
-
-    @include('partials.sidebar')
-
-    <div class="app-main-shell gs-main min-h-screen">
-        @include('partials.topbar')
-
-        <main class="mx-auto max-w-[90rem] px-4 py-7 sm:px-7 lg:px-9">
-            @if ($errors->any())
-                <div class="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                    <span>Periksa kembali isian yang ditandai merah.</span>
+        <div class="tb-wrapper">
+            <div class="tb-page-header">
+                <div class="container-xl">
+                    <div>
+                        @hasSection('pretitle')
+                            <p class="tb-pretitle">@yield('pretitle')</p>
+                        @endif
+                        <h1 class="tb-page-title">@yield('title', 'Dashboard')</h1>
+                    </div>
+                    @hasSection('actions')
+                        <div class="tb-page-actions">@yield('actions')</div>
+                    @endif
                 </div>
-            @endif
+            </div>
 
-            @yield('content')
-        </main>
+            <main class="tb-page-body">
+                <div class="container-xl">
+                    @if ($errors->any())
+                        <div class="mb-4 flex items-start gap-3 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                            <i class="ti ti-alert-triangle mt-0.5"></i>
+                            <span>Periksa kembali isian yang ditandai merah.</span>
+                        </div>
+                    @endif
 
-        <footer class="px-6 pb-7 pt-2 text-center text-[0.6875rem] font-medium tracking-wide text-slate-400">
-            {{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas &middot; {{ date('Y') }}
-        </footer>
+                    @yield('content')
+                </div>
+            </main>
+
+            <footer class="tb-footer">
+                <div class="container-xl">
+                    <span>{{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas</span>
+                    <span>&copy; {{ date('Y') }}</span>
+                </div>
+            </footer>
+        </div>
     </div>
 
     @include('partials.scripts')
     @include('partials.scripts-app')
     @include('partials.backup-auto')
+    <script src="{{ asset('js/tabler-nav.js') }}?v={{ @filemtime(public_path('js/tabler-nav.js')) }}"></script>
     @stack('scripts')
 
-    <script src="{{ asset('js/sidebar.js') }}?v={{ @filemtime(public_path('js/sidebar.js')) }}"></script>
 </body>
 </html>

@@ -13,26 +13,26 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-        <a class="btn btn-light" href="{{ route('arsip.index', array_filter(['kategori' => $arsip->kategori->slug, 'jenis' => $arsip->isSederhana() ? null : $arsip->jenis_arsip])) }}"><i data-lucide="arrow-left" class="h-4 w-4"></i> Kembali</a>
+        <a class="btn btn-light" href="{{ route('arsip.index', array_filter(['kategori' => $arsip->kategori->slug, 'jenis' => $arsip->isSederhana() ? null : $arsip->jenis_arsip])) }}"><i class="ti ti-arrow-left h-4 w-4"></i> Kembali</a>
         @if ($arsip->bisaCetakFormulir())
-            <a class="btn btn-primary" href="{{ route('arsip.formulir', $arsip) }}"><i data-lucide="file-down" class="h-4 w-4"></i> Formulir PDF</a>
+            <a class="btn btn-primary" href="{{ route('arsip.formulir', $arsip) }}"><i class="ti ti-file-download h-4 w-4"></i> Formulir PDF</a>
             @if (in_array($arsip->jenis_arsip, ['formulir_laporan', 'formulir_temuan'], true))
-                <a class="btn btn-light" href="#preview-formulir"><i data-lucide="eye" class="h-4 w-4"></i> Preview lengkap</a>
+                <a class="btn btn-light" href="#preview-formulir"><i class="ti ti-eye h-4 w-4"></i> Preview lengkap</a>
             @endif
-            <a class="btn btn-light" href="{{ route('arsip.formulir.word', $arsip) }}"><i data-lucide="file-text" class="h-4 w-4"></i> Formulir Word</a>
+            <a class="btn btn-light" href="{{ route('arsip.formulir.word', $arsip) }}"><i class="ti ti-file-text h-4 w-4"></i> Formulir Word</a>
         @endif
         @if ($arsip->punyaBerkas() && ! \App\Models\Arsip::punyaFotoBukti($arsip->jenis_arsip))
-            <a class="btn {{ $arsip->isSederhana() ? 'btn-primary' : 'btn-light' }}" href="{{ route('arsip.unduh', $arsip) }}"><i data-lucide="download" class="h-4 w-4"></i> {{ $arsip->isSederhana() ? 'Download berkas' : 'Berkas scan' }}</a>
+            <a class="btn {{ $arsip->isSederhana() ? 'btn-primary' : 'btn-light' }}" href="{{ route('arsip.unduh', $arsip) }}"><i class="ti ti-download h-4 w-4"></i> {{ $arsip->isSederhana() ? 'Download berkas' : 'Berkas scan' }}</a>
         @endif
         @can('update', $arsip)
-            <a class="btn btn-light" href="{{ route('arsip.edit', $arsip) }}"><i data-lucide="pencil" class="h-4 w-4"></i> Edit</a>
+            <a class="btn btn-light" href="{{ route('arsip.edit', $arsip) }}"><i class="ti ti-pencil h-4 w-4"></i> Edit</a>
         @endcan
         @can('delete', $arsip)
             <form method="POST" action="{{ route('arsip.destroy', $arsip) }}" class="js-confirm-delete"
                   data-message="Arsip {{ $arsip->label() }} beserta berkasnya akan dihapus permanen.">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="btn btn-danger-ghost"><i data-lucide="trash-2" class="h-4 w-4"></i> Hapus</button>
+                <button type="submit" class="btn btn-danger-ghost"><i class="ti ti-trash h-4 w-4"></i> Hapus</button>
             </form>
         @endcan
     </div>

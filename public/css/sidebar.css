@@ -366,3 +366,298 @@ html.dark .gc-stat { background: rgba(255, 255, 255, .06); }
 /* Teks tombol mode gelap rata kiri seperti menu lain */
 .gs-theme { text-align: left; }
 .gs-theme .gs-text, .gs .gs-text { text-align: left; }
+
+/* Tabler-inspired clean admin shell */
+:root{--gs-w:16.5rem;--gs-gap:0;--gs-bg:#fff;--gs-bg-solid:#fff;--gs-border:#e6e8eb;--gs-edge:transparent;--gs-text:#536171;--gs-muted:#7b8794;--gs-accent:#206bc4;--gs-accent-text:#206bc4;--gs-pill:#f1f5fa;--gs-pill-border:transparent;--gs-pill-active:#eaf2fb;--gs-pill-active-border:transparent;--gs-shadow:none}
+html.dark{--gs-bg:#182331;--gs-bg-solid:#182331;--gs-border:#2b3948;--gs-text:#bdc8d5;--gs-muted:#8d9aaa;--gs-accent:#83b7f0;--gs-accent-text:#83b7f0;--gs-pill:#203040;--gs-pill-active:#203b58;--gs-shadow:none}
+body.app-body,html.dark body.app-body{background:#f5f7fb!important;background-image:none!important}html.dark body.app-body{background:#111923!important}
+.gs{top:0;bottom:0;left:0;border-radius:0;border:0;border-right:1px solid #e6e8eb;background:#fff;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.gs-main{padding-left:var(--gs-w)}html.gs-compact .gs-main{padding-left:var(--gs-w-compact)}
+.gs-head{height:4.25rem;border-bottom:1px solid #e6e8eb}.gs-logo{width:2.45rem;height:2.45rem;border-radius:4px;background:#fff}.gs-logo img{filter:none}
+.gs-brand-copy strong{color:#182433;letter-spacing:-.02em;font-weight:700}.gs-brand-copy small{color:#7b8794}.gs-toggle,.gs-close{color:#657384}
+.gs-search{padding:.85rem .8rem .5rem}.gs-search-box{border:1px solid #e6e8eb;border-radius:4px;background:#f5f7fb}.gs-search-box input{color:#182433}.gs-search-box input::placeholder{color:#9aa5b1}
+.gs-label{color:#7b8794;letter-spacing:.09em;font-weight:700}.gs-item{border-radius:4px!important;color:#536171!important}.gs-item:hover{background:#f1f5fa!important;color:#206bc4!important}.gs-item.is-active{background:#eaf2fb!important;color:#206bc4!important}
+.gs-sub{border-left-color:#dce3eb}.gs-sublink{color:#657384!important;border-radius:4px!important}.gs-sublink:hover,.gs-sublink.is-active{color:#206bc4!important;background:#f1f5fa!important}
+.gs-foot{border-top:1px solid #e6e8eb}.gs-theme,.gs-user-copy strong{color:#182433!important}.gs-user-copy small{color:#7b8794!important}.gs-logout-btn{color:#657384!important}
+@media(max-width:1023px){.gs{top:0;bottom:0;left:0;border-radius:0}.gs-main,html.gs-compact .gs-main{padding-left:0}}
+html.dark .gs{background:#182331;border-color:#2b3948}html.dark .gs-head,html.dark .gs-foot{border-color:#2b3948}
+html.dark .gs-brand-copy strong,html.dark .gs-theme,html.dark .gs-user-copy strong{color:#e7edf4!important}
+html.dark .gs-item{color:#bdc8d5!important}html.dark .gs-item.is-active{background:#203b58!important;color:#83b7f0!important}
+html.dark .gs-search-box{background:#111923;border-color:#2b3948}html.dark .gs-search-box input{color:#e7edf4}
+
+/* ============================================================
+   TABLER-LIKE HORIZONTAL APP SHELL
+   Replace the vertical drawer with a compact horizontal navbar.
+   ============================================================ */
+:root {
+    --gs-w: 100%;
+    --gs-w-compact: 100%;
+    --gs-gap: 0;
+    --gs-bg: #fff;
+    --gs-bg-solid: #fff;
+    --gs-border: #e6e8eb;
+    --gs-edge: transparent;
+    --gs-text: #354052;
+    --gs-muted: #667085;
+    --gs-accent: #206bc4;
+    --gs-accent-text: #206bc4;
+    --gs-pill: #f1f5f9;
+    --gs-pill-border: transparent;
+    --gs-pill-active: #e8f1fb;
+    --gs-pill-active-border: transparent;
+    --gs-shadow: none;
+}
+html.dark {
+    --gs-bg: #182433;
+    --gs-bg-solid: #182433;
+    --gs-border: #2b394a;
+    --gs-text: #dce3eb;
+    --gs-muted: #9aa8b8;
+    --gs-accent: #6aa7ec;
+    --gs-accent-text: #8bbaf0;
+    --gs-pill: #24364b;
+    --gs-pill-active: #263f5d;
+    --gs-shadow: none;
+}
+body.app-body, html.dark body.app-body {
+    background: #f5f7fb !important;
+    background-image: none !important;
+}
+html.dark body.app-body { background: #111a26 !important; }
+.gs, html.gs-compact .gs {
+    position: sticky;
+    z-index: 40;
+    inset: auto;
+    top: 0;
+    left: auto;
+    bottom: auto;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+    overflow: visible;
+    padding: 0 max(1.25rem, calc((100vw - 90rem) / 2));
+    border: 0;
+    border-bottom: 1px solid #e6e8eb;
+    border-radius: 0;
+    background: #fff;
+    color: #354052;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transform: none !important;
+}
+html.dark .gs, html.dark.gs-compact .gs {
+    background: #182433;
+    color: #dce3eb;
+    border-bottom-color: #2b394a;
+}
+.gs-main, html.gs-compact .gs-main { padding-left: 0 !important; }
+.gs-head, html.gs-compact .gs-head {
+    width: 17rem;
+    height: 4.15rem;
+    flex: 0 0 auto;
+    padding: 0 .85rem 0 0;
+    gap: .5rem;
+}
+.gs-brand { gap: .65rem; border-radius: 0; }
+.gs-logo, html.gs-compact .gs-logo {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: .1rem;
+    border-radius: 4px;
+    background: transparent;
+}
+.gs-logo img { filter: none; }
+.gs-brand-copy, html.gs-compact .gs-brand-copy {
+    display: block;
+    opacity: 1;
+    max-width: 14rem;
+    transform: none;
+    overflow: visible;
+}
+.gs-brand-copy strong { color: #182433; font-size: .9rem; letter-spacing: -.025em; }
+.gs-brand-copy small { color: #667085; font-size: .68rem; }
+html.dark .gs-brand-copy strong { color: #f2f5f8; }
+html.dark .gs-brand-copy small { color: #9aa8b8; }
+.gs-toggle, .gs-close { display: none !important; }
+.gs-search, html.gs-compact .gs-search { display: none !important; }
+.gs-nav, html.gs-compact .gs-nav {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: .2rem;
+    min-width: 0;
+    min-height: 4.15rem;
+    height: auto;
+    overflow: visible;
+    padding: 0 .5rem;
+}
+.gs-pill { display: none !important; }
+.gs-label { display: none !important; }
+.gs-item, html.gs-compact .gs-item {
+    display: inline-flex;
+    width: auto;
+    height: 2.35rem;
+    min-height: 2.35rem;
+    margin: 0;
+    padding: 0 .72rem;
+    gap: .35rem;
+    border: 1px solid transparent;
+    border-radius: 4px !important;
+    color: #475467 !important;
+    font-size: .8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.gs-item:hover { background: #f4f6f9 !important; color: #206bc4 !important; }
+.gs-item.is-active { background: #eaf2fb !important; border-color: #d8e7f8; color: #206bc4 !important; font-weight: 600; }
+html.dark .gs-item, html.dark.gs-compact .gs-item { color: #c5d0dc !important; }
+html.dark .gs-item:hover { background: #24364b !important; color: #9bc5f2 !important; }
+html.dark .gs-item.is-active { background: #263f5d !important; border-color: #365577; color: #9bc5f2 !important; }
+.gs-ico, html.gs-compact .gs-ico { width: 1.15rem; height: 1.15rem; }
+.gs-ico svg { width: 1rem; height: 1rem; }
+.gs-text, html.gs-compact .gs-text {
+    display: inline;
+    max-width: none;
+    margin-left: .18rem;
+    opacity: 1;
+    overflow: visible;
+    transform: none;
+    pointer-events: auto;
+}
+.gs-chev, html.gs-compact .gs-chev { display: inline-grid; opacity: 1; max-width: 1rem; margin-left: .1rem; }
+.gs-group { position: relative; flex: 0 0 auto; }
+.gs-sub, html.gs-compact .gs-sub {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + .35rem);
+    left: 0;
+    width: 13rem;
+    max-height: min(65vh, 28rem);
+    overflow: auto;
+    padding: .35rem;
+    border: 1px solid #e3e7ed;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(25, 39, 56, .10);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px);
+    transition: opacity .16s ease, transform .16s ease, visibility .16s;
+}
+.gs-group.is-open > .gs-sub { opacity: 1; visibility: visible; transform: none; }
+.gs-sub-inner { display: grid; gap: 2px; }
+.gs-sublink, html.gs-compact .gs-sublink {
+    display: block;
+    padding: .55rem .7rem;
+    border-radius: 3px !important;
+    color: #475467 !important;
+    font-size: .8rem;
+}
+.gs-sublink:hover, .gs-sublink.is-active { background: #edf3fa !important; color: #206bc4 !important; }
+html.dark .gs-sub, html.dark.gs-compact .gs-sub { background: #1d2b3b; border-color: #344457; }
+html.dark .gs-sublink { color: #c5d0dc !important; }
+html.dark .gs-sublink:hover, html.dark .gs-sublink.is-active { background: #263f5d !important; color: #9bc5f2 !important; }
+.gs-empty { display: none !important; }
+.gs-foot, html.gs-compact .gs-foot {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .45rem;
+    width: auto;
+    margin: 0 0 0 auto;
+    padding: 0 0 0 .7rem;
+    border: 0;
+    border-top: 0;
+}
+.gs-theme, html.gs-compact .gs-theme {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #e5e8ed;
+    border-radius: 4px;
+    color: #667085;
+    justify-content: center;
+}
+.gs-theme .gs-text, .gs-switch { display: none !important; }
+html.dark .gs-theme { border-color: #344457; color: #c5d0dc; }
+.gs-user, html.gs-compact .gs-user {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.gs-user-link { gap: .45rem; padding: .15rem; }
+.gs-user-copy, html.gs-compact .gs-user-copy { display: block; max-width: 9rem; opacity: 1; transform: none; }
+.gs-user-copy strong { color: #344054; font-size: .76rem; }
+.gs-user-copy small { color: #667085; font-size: .66rem; }
+html.dark .gs-user-copy strong { color: #e5ebf2; }
+html.dark .gs-user-copy small { color: #9aa8b8; }
+.gs-logout-btn { width: 2rem; height: 2rem; border-radius: 4px; }
+.gs-tip { display: none !important; }
+.gs-topbar {
+    position: sticky;
+    top: 4.15rem;
+    z-index: 20;
+    height: 3.65rem !important;
+    background: #fff !important;
+    border-bottom: 1px solid #e6e8eb !important;
+    backdrop-filter: none !important;
+}
+html.dark .gs-topbar { background: #182433 !important; border-bottom-color: #2b394a !important; }
+.gs-topbar h1 { font-size: 1rem !important; font-weight: 650 !important; letter-spacing: -.025em !important; }
+.gs-topbar > div > button { display: none !important; }
+@media (max-width: 1100px) {
+    .gs { padding-left: 1rem; padding-right: 1rem; }
+    .gs-head { width: 14rem; }
+    .gs-item, html.gs-compact .gs-item { padding-left: .5rem; padding-right: .5rem; font-size: .75rem; }
+}
+@media (max-width: 760px) {
+    .gs, html.gs-compact .gs { position: sticky; padding: .35rem .75rem 0; gap: 0; }
+    .gs-head, html.gs-compact .gs-head { width: 100%; height: 3.5rem; padding: 0 .15rem; }
+    .gs-nav, html.gs-compact .gs-nav {
+        order: 3;
+        flex: 1 0 100%;
+        width: 100%;
+        min-height: 2.9rem;
+        padding: .2rem 0 .45rem;
+        overflow-x: auto;
+        overflow-y: visible;
+        white-space: nowrap;
+        scrollbar-width: thin;
+    }
+    .gs-item, html.gs-compact .gs-item { height: 2.2rem; min-height: 2.2rem; }
+    .gs-foot, html.gs-compact .gs-foot { position: absolute; top: .6rem; right: .7rem; }
+    .gs-user-copy { display: none !important; }
+    .gs-topbar { top: 6.75rem; padding-left: 1rem !important; padding-right: 1rem !important; }
+    .gs-topbar > div > button { display: none !important; }
+    main { padding-top: 1.25rem !important; }
+}
+
+/* Flat information hierarchy: inner panels become plain content, never cards in cards. */
+.card { border-radius: 4px !important; box-shadow: none !important; }
+.card .card,
+.card [class~="card"] {
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+.card .card { padding-left: 0 !important; padding-right: 0 !important; }
+.rounded-2xl, .rounded-xl { border-radius: 4px !important; }
+.rounded-lg { border-radius: 4px !important; }
+.js-datatable { border-collapse: collapse !important; }
+.js-datatable thead th { background: #f5f7fa !important; color: #475467 !important; font-weight: 600 !important; border-bottom: 1px solid #e3e7ed !important; }
+.js-datatable tbody td { border-bottom: 1px solid #edf0f3 !important; }
+html.dark .js-datatable thead th { background: #202e3e !important; color: #dce3eb !important; }
+html.dark .js-datatable tbody td { border-bottom-color: #2b394a !important; }

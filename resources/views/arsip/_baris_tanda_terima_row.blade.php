@@ -19,7 +19,7 @@
             @endif
         </div>
         <button type="button" class="btn-icon btn-icon-danger shrink-0" data-pspp03-remove aria-label="Hapus dokumen ini" title="Hapus dokumen ini">
-            <i data-lucide="x" class="h-4 w-4"></i>
+            <i class="ti ti-x h-4 w-4"></i>
         </button>
     </div>
 
@@ -33,11 +33,11 @@
                            class="w-16 border-0 bg-transparent p-0 text-center text-sm font-semibold text-slate-800 focus:ring-0">
                     <div class="flex w-9 flex-col border-l border-slate-200">
                         <button type="button" class="grid flex-1 place-items-center text-slate-600 transition hover:bg-orange-50 hover:text-orange-700 disabled:opacity-35" data-pspp03-step="1" aria-label="Tambah {{ strtolower($qty['label']) }}">
-                            <i data-lucide="plus" class="h-3.5 w-3.5"></i>
+                            <i class="ti ti-plus h-3.5 w-3.5"></i>
                         </button>
                         <span class="border-t border-slate-200"></span>
                         <button type="button" class="grid flex-1 place-items-center text-slate-600 transition hover:bg-slate-100 disabled:opacity-35" data-pspp03-step="-1" aria-label="Kurangi {{ strtolower($qty['label']) }}">
-                            <i data-lucide="minus" class="h-3.5 w-3.5"></i>
+                            <i class="ti ti-minus h-3.5 w-3.5"></i>
                         </button>
                     </div>
                 </div>

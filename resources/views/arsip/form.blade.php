@@ -138,7 +138,7 @@
     </div>
 
     <div class="mt-6 flex items-center gap-3">
-        <button type="submit" class="btn btn-primary"><i data-lucide="check" class="h-4 w-4"></i> Simpan arsip</button>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-check h-4 w-4"></i> Simpan arsip</button>
         <a class="btn btn-light" href="{{ $edit ? route('arsip.show', $arsip) : route('arsip.index') }}">Batal</a>
     </div>
 </form>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,15 +7,18 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/tabler.css') }}?v={{ @filemtime(public_path('css/tabler.css')) }}">
+    <style>*, *::before, *::after { box-sizing: border-box; }</style>
 </head>
-<body class="flex h-full items-center justify-center bg-slate-50 px-6 text-slate-700" style="font-family:'Plus Jakarta Sans',system-ui,sans-serif">
-    <div class="max-w-md text-center">
-        <p class="text-5xl font-semibold text-slate-300">{{ $code }}</p>
-        <h1 class="mt-4 text-xl font-semibold text-slate-900">{{ $title }}</h1>
-        <p class="mt-2 text-sm text-slate-500">{{ $message }}</p>
-        <a href="{{ url('/') }}" class="mt-6 inline-flex rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900">Kembali ke beranda</a>
+<body class="tb-body">
+    <div class="tb-error">
+        <p class="tb-error-code">{{ $code }}</p>
+        <h1>{{ $title }}</h1>
+        <p>{{ $message }}</p>
+        <a href="{{ url('/') }}" class="btn btn-primary">Kembali ke beranda</a>
     </div>
 </body>
 </html>

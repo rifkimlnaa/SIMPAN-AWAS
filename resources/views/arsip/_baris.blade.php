@@ -25,7 +25,7 @@
         @error('dokumen')<p class="err">{{ $message }}</p>@enderror
 
         <button type="button" class="btn btn-light btn-sm" id="barisAdd">
-            <i data-lucide="plus" class="h-4 w-4"></i> {{ $baris['tambah'] ?? 'Tambah baris' }}
+            <i class="ti ti-plus h-4 w-4"></i> {{ $baris['tambah'] ?? 'Tambah baris' }}
         </button>
     </div>
 </section>

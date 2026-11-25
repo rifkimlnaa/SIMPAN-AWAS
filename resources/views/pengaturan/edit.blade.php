@@ -40,7 +40,7 @@
                 </p>
 
                 <div class="mt-4 flex items-center gap-3">
-                    <button type="submit" class="btn btn-primary"><i data-lucide="upload" class="h-4 w-4"></i> Simpan media latar</button>
+                    <button type="submit" class="btn btn-primary"><i class="ti ti-upload h-4 w-4"></i> Simpan media latar</button>
                 </div>
             </form>
 
@@ -49,7 +49,7 @@
                       data-message="Media latar akan dihapus dan halaman login kembali menggunakan latar bawaan.">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger-ghost btn-sm"><i data-lucide="trash-2" class="h-4 w-4"></i> Hapus media latar</button>
+                    <button type="submit" class="btn btn-danger-ghost btn-sm"><i class="ti ti-trash h-4 w-4"></i> Hapus media latar</button>
                 </form>
             @endif
         </section>

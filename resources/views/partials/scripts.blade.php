@@ -1,17 +1,13 @@
 {{-- Skrip inti: dipakai di halaman login maupun halaman aplikasi --}}
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
-<link rel="stylesheet" href="{{ asset('css/popup.css') }}?v={{ @filemtime(public_path('css/popup.css')) }}">
 <script>
     // Warna pop up mengikuti tema aktif.
     function swalTema() {
-        return {}; // warna diatur popup.css (kaca, ikut mode terang/gelap)
+        return {}; // tampilan pop up diatur di tabler.css
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (window.lucide) lucide.createIcons();
-
         @if (session('success'))
             Swal.fire(Object.assign({ toast: true, position: 'top-end', icon: 'success', text: @json(session('success')), showConfirmButton: false, timer: 3500, timerProgressBar: true }, swalTema()));
         @endif
@@ -33,7 +29,7 @@
             showCancelButton: true,
             confirmButtonText: 'Ya, hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#dc2626',
+            confirmButtonColor: '#d63939',
             reverseButtons: true,
             focusCancel: true
         }, swalTema())).then(function (result) { if (result.isConfirmed) form.submit(); });

@@ -2,7 +2,7 @@
     <div class="mb-3 flex items-center justify-between">
         <strong class="text-sm text-slate-800" data-saksi-title>Saksi</strong>
         <button type="button" class="btn-icon btn-icon-danger" data-saksi-remove aria-label="Hapus saksi ini" title="Hapus saksi ini">
-            <i data-lucide="x" class="h-4 w-4"></i>
+            <i class="ti ti-x h-4 w-4"></i>
         </button>
     </div>
 

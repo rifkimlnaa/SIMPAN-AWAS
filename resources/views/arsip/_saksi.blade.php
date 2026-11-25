@@ -18,7 +18,7 @@
         @error('saksi')<p class="err">{{ $message }}</p>@enderror
 
         <button type="button" class="btn btn-light btn-sm" id="saksiAdd">
-            <i data-lucide="plus" class="h-4 w-4"></i> Tambah saksi
+            <i class="ti ti-plus h-4 w-4"></i> Tambah saksi
         </button>
     </div>
 </section>

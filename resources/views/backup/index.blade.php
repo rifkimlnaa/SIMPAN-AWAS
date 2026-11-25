@@ -11,18 +11,18 @@
     </div>
     <form method="POST" action="{{ route('backup.unduh') }}">
         @csrf
-        <button type="submit" class="btn btn-primary"><i data-lucide="download" class="h-4 w-4"></i> Unduh Backup (ZIP)</button>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-download h-4 w-4"></i> Unduh Backup (ZIP)</button>
     </form>
 </div>
 
 @if (session('success'))
     <div class="mb-5 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-        <i data-lucide="check-circle-2" class="mt-0.5 h-4 w-4 shrink-0"></i>{{ session('success') }}
+        <i class="ti ti-circle-check mt-0.5 h-4 w-4 shrink-0"></i>{{ session('success') }}
     </div>
 @endif
 @if (session('error'))
     <div class="mb-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-        <i data-lucide="alert-circle" class="mt-0.5 h-4 w-4 shrink-0"></i>{{ session('error') }}
+        <i class="ti ti-alert-circle mt-0.5 h-4 w-4 shrink-0"></i>{{ session('error') }}
     </div>
 @endif
 @if ($errors->any())
@@ -74,7 +74,7 @@
                 <p class="mt-1 text-xs text-slate-500">Pilihan Google Drive hanya berjalan jika Drive sudah terhubung (lihat kotak Google Drive).</p>
             </div>
             <div class="sm:col-span-2">
-                <button type="submit" class="btn btn-primary"><i data-lucide="check" class="h-4 w-4"></i> Simpan jadwal</button>
+                <button type="submit" class="btn btn-primary"><i class="ti ti-check h-4 w-4"></i> Simpan jadwal</button>
             </div>
         </form>
 
@@ -92,7 +92,7 @@
             <p class="mt-2 text-sm text-slate-500">Belum diatur. Isi <code>GOOGLE_DRIVE_CLIENT_ID</code>, <code>GOOGLE_DRIVE_CLIENT_SECRET</code>, dan <code>GOOGLE_DRIVE_REDIRECT_URI</code> di <code>.env</code>, lalu bersihkan cache.</p>
             <p class="mt-2 text-xs text-slate-500">Redirect URI yang dipakai: <code>{{ url('/backup/google/callback') }}</code></p>
         @elseif ($driveTerhubung)
-            <p class="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><i data-lucide="check-circle-2" class="h-4 w-4"></i> Terhubung. Folder: SIMPAN-AWAS Backup</p>
+            <p class="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><i class="ti ti-circle-check h-4 w-4"></i> Terhubung. Folder: SIMPAN-AWAS Backup</p>
             @if ($p['drive_status'])
                 <p class="mt-2 text-xs {{ $p['drive_status'] === 'berhasil' ? 'text-slate-500' : 'text-red-600' }}">Kiriman terakhir ({{ \Carbon\Carbon::parse($p['drive_waktu'])->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB): {{ $p['drive_pesan'] }}</p>
             @endif
@@ -102,16 +102,16 @@
             </form>
         @else
             <p class="mt-2 text-sm text-slate-500">Belum terhubung. Backup akan dikirim ke folder "SIMPAN-AWAS Backup" di Google Drive-mu.</p>
-            <a href="{{ route('backup.google.hubungkan') }}" class="btn btn-primary mt-3"><i data-lucide="link" class="h-4 w-4"></i> Hubungkan Google Drive</a>
+            <a href="{{ route('backup.google.hubungkan') }}" class="btn btn-primary mt-3"><i class="ti ti-link h-4 w-4"></i> Hubungkan Google Drive</a>
         @endif
     </section>
 
     <section class="card p-6">
         <h2 class="text-base font-semibold text-slate-900">Isi file ZIP</h2>
         <ul class="mt-3 space-y-2 text-sm text-slate-600">
-            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 text-emerald-600"></i> Database aplikasi</li>
-            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 text-emerald-600"></i> Seluruh berkas arsip</li>
-            <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 text-emerald-600"></i> Foto profil dan media web</li>
+            <li class="flex gap-2"><i class="ti ti-check mt-0.5 h-4 w-4 text-emerald-600"></i> Database aplikasi</li>
+            <li class="flex gap-2"><i class="ti ti-check mt-0.5 h-4 w-4 text-emerald-600"></i> Seluruh berkas arsip</li>
+            <li class="flex gap-2"><i class="ti ti-check mt-0.5 h-4 w-4 text-emerald-600"></i> Foto profil dan media web</li>
         </ul>
         <p class="mt-4 text-xs text-slate-500">ZIP tidak dienkripsi dan berisi data asli. Simpan di tempat aman (komputer kantor atau Google Drive). File <code>.env</code> tidak ikut.</p>
     </section>
@@ -121,7 +121,7 @@
 <section class="card mb-6 overflow-hidden" id="hosting-storage-panel" data-endpoint="{{ $storageUsageUrl }}" aria-live="polite">
     <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
-            <span class="rounded-xl bg-brand-50 p-2.5 text-brand-700"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
+            <span class="rounded-xl bg-brand-50 p-2.5 text-brand-700"><i class="ti ti-server h-5 w-5"></i></span>
             <div>
                 <h2 class="font-semibold text-slate-900">Live Storage Hosting</h2>
                 <p class="text-xs text-slate-500">Pemakaian dan kuota disk akun cPanel, termasuk file dan database yang dihitung oleh hosting.</p>
@@ -133,7 +133,7 @@
                 <span id="hosting-storage-status-label">Menghubungkan ke cPanel…</span>
             </span>
             <button type="button" id="hosting-storage-refresh" class="btn btn-secondary">
-                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                <i class="ti ti-refresh h-4 w-4"></i>
                 Perbarui
             </button>
         </div>

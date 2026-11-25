@@ -34,7 +34,7 @@
 
     <div class="flex justify-end gap-3 border-t border-slate-100 pt-5">
         <a class="btn btn-light" href="{{ route('kategori.index') }}">Batal</a>
-        <button type="submit" class="btn btn-primary"><i data-lucide="check" class="h-4 w-4"></i> Simpan</button>
+        <button type="submit" class="btn btn-primary"><i class="ti ti-check h-4 w-4"></i> Simpan</button>
     </div>
 </form>
 @endsection
