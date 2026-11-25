@@ -66,7 +66,8 @@ class CpanelStorageService
 
             $result = data_get($payload, 'result', []);
             if (! is_array($result) || (int) data_get($result, 'status', 0) !== 1) {
-                return $this->unavailable('cPanel belum dapat memberikan statistik disk untuk akun ini.');
+                return $this->fetchQuota($baseUrl, $username, $token)
+                    ?? $this->unavailable('cPanel belum dapat memberikan statistik disk untuk akun ini.');
             }
 
             $rows = data_get($result, 'data', []);
@@ -91,7 +92,8 @@ class CpanelStorageService
             }
 
             if (! is_array($row)) {
-                return $this->unavailable('Statistik Disk Space Usage tidak ditemukan pada respons cPanel.');
+                return $this->fetchQuota($baseUrl, $username, $token)
+                    ?? $this->unavailable('Statistik Disk Space Usage tidak ditemukan pada respons cPanel.');
             }
 
             $usedRaw = $row['count'] ?? $row['_count'] ?? null;
@@ -135,6 +137,50 @@ class CpanelStorageService
         } catch (Throwable $exception) {
             // Jangan log exception HTTP mentah karena dapat berisi detail koneksi sensitif.
             return $this->unavailable('Tidak dapat terhubung ke API cPanel. Periksa koneksi HTTPS dan konfigurasi hosting.');
+        }
+    }
+
+    /** Cadangan: UAPI Quota::get_quota_info, tersedia di hampir semua akun cPanel. */
+    private function fetchQuota(string $baseUrl, string $username, string $token): ?array
+    {
+        try {
+            $response = Http::acceptJson()
+                ->withHeaders(['Authorization' => 'cpanel ' . $username . ':' . $token])
+                ->connectTimeout(5)
+                ->timeout(max(5, min(30, (int) config('services.cpanel.timeout', 12))))
+                ->get($baseUrl . '/execute/Quota/get_quota_info');
+
+            $data = $response->successful() && (int) data_get($response->json(), 'status', 0) === 1
+                ? data_get($response->json(), 'data')
+                : null;
+            if (! is_array($data) || ! is_numeric($data['megabytes_used'] ?? null)) {
+                return null;
+            }
+
+            $usedBytes = (int) round((float) $data['megabytes_used'] * 1048576);
+            $limit = $data['megabyte_limit'] ?? null;
+            $isUnlimited = ! is_numeric($limit) || (float) $limit <= 0;
+            $quotaBytes = $isUnlimited ? null : (int) round((float) $limit * 1048576);
+            $freeBytes = $quotaBytes !== null ? max(0, $quotaBytes - $usedBytes) : null;
+            $percent = $quotaBytes ? max(0, min(100, (int) round($usedBytes / $quotaBytes * 100))) : null;
+
+            return [
+                'available' => true,
+                'source' => 'cPanel UAPI · Quota',
+                'used_bytes' => $usedBytes,
+                'used_display' => $this->formatBytes($usedBytes),
+                'quota_bytes' => $quotaBytes,
+                'quota_display' => $isUnlimited ? 'Tanpa batas' : $this->formatBytes($quotaBytes),
+                'free_bytes' => $freeBytes,
+                'free_display' => $isUnlimited ? 'Tanpa batas' : $this->formatBytes($freeBytes),
+                'is_unlimited' => $isUnlimited,
+                'percent' => $percent,
+                'percent_display' => $percent !== null ? $percent . '%' : '—',
+                'checked_at' => now()->timezone('Asia/Jakarta')->toIso8601String(),
+                'message' => null,
+            ];
+        } catch (Throwable $exception) {
+            return null;
         }
     }
 
