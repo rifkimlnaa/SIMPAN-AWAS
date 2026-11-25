@@ -2,43 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Backup;
-use App\Services\BackupService;
 use App\Services\CpanelStorageService;
+use App\Services\MediaBackupService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use RuntimeException;
 use Throwable;
 
 class BackupController extends Controller
 {
-    public function index(): View
+    public function index(MediaBackupService $media): View
     {
-        $backups = Backup::query()->with(['creator', 'restorer'])->latest()->paginate(15);
-        $disk = (string) config('backup.disk', 'local');
-        $keyReady = strlen((string) config('backup.encryption_key', '')) >= 32;
+        $p = $media->pengaturan();
 
         return view('backup.index', [
-            'backups' => $backups,
-            'diskName' => $disk,
-            'keyReady' => $keyReady,
-            'totalComplete' => Backup::query()->where('status', 'complete')->count(),
-            'totalFailed' => Backup::query()->where('status', 'failed')->count(),
-            'lastBackup' => Backup::query()->where('status', 'complete')->latest('completed_at')->first(),
+            'p' => $p,
+            'labelJadwal' => $media->labelJadwal($p),
+            'berikutnya' => $media->jadwalBerikutnya($p),
             'storageUsageUrl' => route('backup.storage-usage'),
         ]);
     }
 
-    /**
-     * Mengambil statistik kuota disk akun cPanel melalui UAPI StatsBar.
-     * Endpoint ini hanya dapat diakses Admin dan tidak pernah mengirim token ke browser.
-     */
     public function storageUsage(Request $request, CpanelStorageService $service): JsonResponse
     {
         $usage = $service->usage($request->boolean('refresh'));
@@ -47,30 +34,61 @@ class BackupController extends Controller
             ->header('Cache-Control', 'private, no-store, max-age=0');
     }
 
-    public function store(Request $request, BackupService $service): RedirectResponse
+    public function jadwal(Request $request, MediaBackupService $media): RedirectResponse
+    {
+        $data = $request->validate([
+            'frekuensi' => ['required', 'in:off,harian,mingguan,bulanan'],
+            'jam' => ['required', 'date_format:H:i'],
+            'hari' => ['nullable', 'integer', 'between:0,6'],
+            'tanggal' => ['nullable', 'integer', 'between:1,28'],
+        ]);
+
+        $media->simpanPengaturan($data['frekuensi'], $data['jam'], (int) ($data['hari'] ?? 0), (int) ($data['tanggal'] ?? 1));
+
+        return back()->with('success', 'Jadwal backup disimpan.');
+    }
+
+    /** Status untuk pengecekan otomatis dari browser admin. */
+    public function status(MediaBackupService $media): JsonResponse
+    {
+        return response()->json(['due' => $media->jatuhTempo()])
+            ->header('Cache-Control', 'private, no-store, max-age=0');
+    }
+
+    /** Unduh manual (tombol). */
+    public function unduh(MediaBackupService $media)
     {
         try {
-            $backup = $service->create('manual', $request->user()->id);
+            $zip = $media->buatZip();
+        } catch (Throwable $e) {
+            report($e);
 
-            return back()->with('success', 'Backup berhasil dibuat: '.$backup->filename);
-        } catch (Throwable $exception) {
-            report($exception);
+            return back()->with('error', $this->pesan($e));
+        }
 
-            return back()->with('error', $this->safeMessage($exception));
+        $media->catatUnduhan();
+
+        return $this->kirim($zip);
+    }
+
+    /** Unduh otomatis sesuai jadwal; hanya berjalan sekali per jadwal. */
+    public function otomatis(MediaBackupService $media)
+    {
+        if (! $media->klaimJadwal()) {
+            return new Response('', 204);
+        }
+
+        try {
+            return $this->kirim($media->buatZip());
+        } catch (Throwable $e) {
+            report($e);
+
+            return new Response('', 500);
         }
     }
 
-    /** Satu klik: langsung unduh ZIP berisi database + semua berkas arsip. */
-    public function unduhZip(BackupService $service)
+    private function kirim(string $zip)
     {
-        try {
-            $zip = $service->createDownloadZip();
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return back()->with('error', $this->safeMessage($exception));
-        }
-
         return response()->download($zip, basename($zip), [
             'Content-Type' => 'application/zip',
             'Cache-Control' => 'private, no-store, max-age=0',
@@ -78,85 +96,8 @@ class BackupController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    public function download(Backup $backup)
+    private function pesan(Throwable $e): string
     {
-        abort_unless($backup->isComplete() && $backup->path, 404);
-        abort_unless(Storage::disk($backup->disk)->exists($backup->path), 404);
-
-        return Storage::disk($backup->disk)->download($backup->path, $backup->filename, [
-            'Cache-Control' => 'private, no-store, max-age=0',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
-    }
-
-    public function restore(Request $request, Backup $backup, BackupService $service): RedirectResponse
-    {
-        $validated = $request->validate([
-            'current_password' => ['required', 'string'],
-            'confirmation' => ['required', 'in:PULIHKAN DATA'],
-        ], [
-            'confirmation.in' => 'Ketik PULIHKAN DATA persis untuk mengonfirmasi pemulihan.',
-        ]);
-
-        if (! Hash::check($validated['current_password'], $request->user()->password)) {
-            return back()->withErrors(['current_password' => 'Password administrator tidak sesuai.'])->withInput();
-        }
-
-        $maintenanceEnabled = false;
-        try {
-            // Stop new web requests while the database and storage are being replaced.
-            Artisan::call('down', ['--retry' => 60]);
-            $maintenanceEnabled = true;
-
-            $safety = $service->restore($backup, $request->user()->id);
-
-            return redirect()->route('backup.index')->with(
-                'success',
-                'Pemulihan selesai. Backup pengaman sebelum pemulihan: '.$safety->filename.'. Silakan masuk kembali jika sesi berakhir.'
-            );
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return back()->with('error', $this->safeMessage($exception));
-        } finally {
-            if ($maintenanceEnabled) {
-                try {
-                    Artisan::call('up');
-                } catch (Throwable $maintenanceException) {
-                    Log::critical('Gagal mengaktifkan kembali aplikasi setelah proses restore.', [
-                        'exception' => $maintenanceException,
-                    ]);
-                }
-            }
-        }
-    }
-
-    public function destroy(Request $request, Backup $backup, BackupService $service): RedirectResponse
-    {
-        abort_if($backup->status === 'running', 409, 'Backup yang sedang berjalan tidak dapat dihapus.');
-
-        $request->validate([
-            'current_password' => ['required', 'string'],
-        ]);
-
-        if (! Hash::check((string) $request->input('current_password'), $request->user()->password)) {
-            return back()->withErrors(['current_password' => 'Password administrator tidak sesuai.']);
-        }
-
-        try {
-            $service->delete($backup);
-
-            return back()->with('success', 'Backup berhasil dihapus.');
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return back()->with('error', 'Backup tidak dapat dihapus. Periksa log aplikasi.');
-        }
-    }
-
-    private function safeMessage(Throwable $exception): string
-    {
-        $message = $exception instanceof RuntimeException ? $exception->getMessage() : 'Terjadi kesalahan internal. Periksa log aplikasi.';
-        return mb_substr($message, 0, 350);
+        return mb_substr($e instanceof RuntimeException ? $e->getMessage() : 'Terjadi kesalahan internal. Periksa log aplikasi.', 0, 350);
     }
 }

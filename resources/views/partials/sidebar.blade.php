@@ -105,8 +105,8 @@
                 <span class="gs-ico"><i data-lucide="users"></i></span><span class="gs-text">Petugas</span>
             </a>
             @php($a = request()->routeIs('backup.*'))
-            <a href="{{ route('backup.index') }}" class="{{ $item($a) }}" data-tip="Backup &amp; Pemulihan" @if($a) aria-current="page" @endif>
-                <span class="gs-ico"><i data-lucide="database"></i></span><span class="gs-text">Backup &amp; Pemulihan</span>
+            <a href="{{ route('backup.index') }}" class="{{ $item($a) }}" data-tip="Backup Media" @if($a) aria-current="page" @endif>
+                <span class="gs-ico"><i data-lucide="database"></i></span><span class="gs-text">Backup Media</span>
             </a>
         @endif
 

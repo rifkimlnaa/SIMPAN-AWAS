@@ -36,6 +36,7 @@
 
     @include('partials.scripts')
     @include('partials.scripts-app')
+    @include('partials.backup-auto')
     @stack('scripts')
 
     <script src="{{ asset('js/sidebar.js') }}?v={{ @filemtime(public_path('js/sidebar.js')) }}"></script>
