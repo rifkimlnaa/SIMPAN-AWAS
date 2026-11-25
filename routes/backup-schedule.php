@@ -100,10 +100,10 @@ Artisan::command('backup:restore-file {path} {--disk=}', function (BackupService
 })->purpose('Pulihkan backup terenkripsi dari disk yang dikonfigurasi');
 
 // Callback dijalankan langsung di proses schedule:run; tidak memakai Schedule::command/Symfony Process.
-Schedule::call(fn () => $runBackup('daily'))->dailyAt('01:00')->timezone('Asia/Jakarta')->withoutOverlapping(180);
-Schedule::call(fn () => $runBackup('weekly'))->weeklyOn(0, '02:00')->timezone('Asia/Jakarta')->withoutOverlapping(360);
-Schedule::call(fn () => $runBackup('monthly'))->monthlyOn(1, '03:00')->timezone('Asia/Jakarta')->withoutOverlapping(720);
+Schedule::call(fn () => $runBackup('daily'))->dailyAt('01:00')->name('backup-harian')->timezone('Asia/Jakarta')->withoutOverlapping(180);
+Schedule::call(fn () => $runBackup('weekly'))->weeklyOn(0, '02:00')->name('backup-mingguan')->timezone('Asia/Jakarta')->withoutOverlapping(360);
+Schedule::call(fn () => $runBackup('monthly'))->monthlyOn(1, '03:00')->name('backup-bulanan')->timezone('Asia/Jakarta')->withoutOverlapping(720);
 Schedule::call(function (): void {
     try { app(BackupService::class)->cleanup(); }
     catch (\Throwable $exception) { report($exception); Log::error('SIMPAN-AWAS scheduled backup cleanup failed.', ['message' => $exception->getMessage()]); }
-})->dailyAt('04:00')->timezone('Asia/Jakarta')->withoutOverlapping(60);
+})->name('backup-bersihkan')->dailyAt('04:00')->timezone('Asia/Jakarta')->withoutOverlapping(60);
