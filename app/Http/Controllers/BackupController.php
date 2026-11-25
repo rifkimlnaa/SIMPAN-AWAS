@@ -4,11 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Backup;
 use App\Services\BackupService;
-use App\Services\BackupPackageService;
-use App\Services\BackupStorageUsageService;
-use App\Services\GoogleDriveBackupService;
+use App\Services\CpanelStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +18,7 @@ use Throwable;
 
 class BackupController extends Controller
 {
-    public function index(BackupStorageUsageService $storage, GoogleDriveBackupService $drive): View
+    public function index(): View
     {
         $backups = Backup::query()->with(['creator', 'restorer'])->latest()->paginate(15);
         $disk = (string) config('backup.disk', 'local');
@@ -32,50 +31,44 @@ class BackupController extends Controller
             'totalComplete' => Backup::query()->where('status', 'complete')->count(),
             'totalFailed' => Backup::query()->where('status', 'failed')->count(),
             'lastBackup' => Backup::query()->where('status', 'complete')->latest('completed_at')->first(),
-            'storageUsage' => $storage->snapshot(),
-            'googleDriveConfigured' => $drive->isConfigured(),
-            'googleDriveConnected' => $drive->isConnected(),
+            'storageUsageUrl' => route('backup.storage-usage'),
         ]);
     }
 
-    public function store(Request $request, BackupService $service, GoogleDriveBackupService $drive, BackupPackageService $packages): RedirectResponse
+    /**
+     * Mengambil statistik kuota disk akun cPanel melalui UAPI StatsBar.
+     * Endpoint ini hanya dapat diakses Admin dan tidak pernah mengirim token ke browser.
+     */
+    public function storageUsage(Request $request, CpanelStorageService $service): JsonResponse
+    {
+        $usage = $service->usage($request->boolean('refresh'));
+
+        return response()->json($usage, $usage['available'] ? 200 : 503)
+            ->header('Cache-Control', 'private, no-store, max-age=0');
+    }
+
+    public function store(Request $request, BackupService $service): RedirectResponse
     {
         try {
             $backup = $service->create('manual', $request->user()->id);
-            if ($request->boolean('send_to_drive')) {
-                try {
-                    $uploaded = $drive->uploadBackup($backup, $packages);
-                    return back()->with('success', 'Backup berhasil dibuat dan dikirim ke Google Drive: '.$uploaded['name']);
-                } catch (Throwable $driveException) {
-                    report($driveException);
-                    return back()->with('error', 'Backup lokal berhasil dibuat, tetapi pengiriman ke Google Drive gagal: '.$this->safeMessage($driveException));
-                }
-            }
 
             return back()->with('success', 'Backup berhasil dibuat: '.$backup->filename);
         } catch (Throwable $exception) {
             report($exception);
+
             return back()->with('error', $this->safeMessage($exception));
         }
     }
 
-    public function download(Backup $backup, BackupPackageService $packages)
+    public function download(Backup $backup)
     {
         abort_unless($backup->isComplete() && $backup->path, 404);
         abort_unless(Storage::disk($backup->disk)->exists($backup->path), 404);
 
-        try {
-            $package = $packages->build($backup);
-            app()->terminating(fn () => $packages->cleanup($package));
-            return response()->download($package['path'], $package['filename'], [
-                'Cache-Control' => 'private, no-store, max-age=0',
-                'X-Content-Type-Options' => 'nosniff',
-                'Content-Type' => 'application/zip',
-            ])->deleteFileAfterSend(true);
-        } catch (Throwable $exception) {
-            report($exception);
-            return back()->with('error', $this->safeMessage($exception));
-        }
+        return Storage::disk($backup->disk)->download($backup->path, $backup->filename, [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function restore(Request $request, Backup $backup, BackupService $service): RedirectResponse

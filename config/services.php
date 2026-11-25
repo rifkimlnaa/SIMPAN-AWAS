@@ -28,17 +28,20 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'google_drive' => [
-        'client_id' => env('GOOGLE_DRIVE_CLIENT_ID'),
-        'client_secret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
-        'redirect_uri' => env('GOOGLE_DRIVE_REDIRECT_URI'),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+    ],
+
+
+    'cpanel' => [
+        'base_url' => env('BACKUP_CPANEL_API_URL'),
+        'username' => env('BACKUP_CPANEL_USERNAME'),
+        'api_token' => env('BACKUP_CPANEL_API_TOKEN'),
+        'timeout' => (int) env('BACKUP_CPANEL_TIMEOUT', 12),
+        'cache_seconds' => (int) env('BACKUP_CPANEL_CACHE_SECONDS', 45),
     ],
 
 ];
