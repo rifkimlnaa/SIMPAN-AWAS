@@ -9,5 +9,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('backup')->name('backup.')->gr
     Route::put('/jadwal', [BackupController::class, 'jadwal'])->name('jadwal');
     Route::get('/status', [BackupController::class, 'status'])->name('status');
     Route::post('/unduh', [BackupController::class, 'unduh'])->name('unduh');
+    Route::get('/google/hubungkan', [BackupController::class, 'driveHubungkan'])->name('google.hubungkan');
+    Route::get('/google/callback', [BackupController::class, 'driveCallback'])->name('google.callback');
+    Route::post('/google/putus', [BackupController::class, 'drivePutus'])->name('google.putus');
     Route::post('/otomatis', [BackupController::class, 'otomatis'])->name('otomatis');
 });

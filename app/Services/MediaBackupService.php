@@ -30,20 +30,22 @@ class MediaBackupService
 
     public function pengaturan(): array
     {
-        $default = ['frekuensi' => 'off', 'jam' => '01:00', 'hari' => 0, 'tanggal' => 1, 'diatur_pada' => null, 'terakhir_unduh' => null];
+        $default = ['frekuensi' => 'off', 'jam' => '01:00', 'hari' => 0, 'tanggal' => 1, 'diatur_pada' => null, 'terakhir_unduh' => null,
+            'tujuan' => 'keduanya', 'drive_status' => null, 'drive_waktu' => null, 'drive_pesan' => null];
         $path = $this->pengaturanPath();
         $data = is_file($path) ? json_decode((string) @file_get_contents($path), true) : null;
 
         return array_merge($default, is_array($data) ? $data : []);
     }
 
-    public function simpanPengaturan(string $frekuensi, string $jam, int $hari, int $tanggal): array
+    public function simpanPengaturan(string $frekuensi, string $jam, int $hari, int $tanggal, string $tujuan = 'keduanya'): array
     {
         $p = $this->pengaturan();
         $p['frekuensi'] = in_array($frekuensi, ['off', 'harian', 'mingguan', 'bulanan'], true) ? $frekuensi : 'off';
         $p['jam'] = preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $jam) ? $jam : '01:00';
         $p['hari'] = max(0, min(6, $hari));
         $p['tanggal'] = max(1, min(28, $tanggal));
+        $p['tujuan'] = in_array($tujuan, ['unduh', 'drive', 'keduanya'], true) ? $tujuan : 'keduanya';
         $p['diatur_pada'] = now()->toIso8601String();
         $this->tulis($p);
 
@@ -142,6 +144,26 @@ class MediaBackupService
         } finally {
             fclose($kunci);
         }
+    }
+
+    public function kirimKeDrive(?array $p = null): bool
+    {
+        return in_array(($p ?? $this->pengaturan())['tujuan'], ['drive', 'keduanya'], true);
+    }
+
+    public function kirimUnduhan(?array $p = null): bool
+    {
+        return in_array(($p ?? $this->pengaturan())['tujuan'], ['unduh', 'keduanya'], true);
+    }
+
+    /** Simpan hasil unggahan Drive terakhir untuk ditampilkan di halaman. */
+    public function catatDrive(bool $berhasil, string $pesan): void
+    {
+        $p = $this->pengaturan();
+        $p['drive_status'] = $berhasil ? 'berhasil' : 'gagal';
+        $p['drive_waktu'] = now()->toIso8601String();
+        $p['drive_pesan'] = mb_substr($pesan, 0, 300);
+        $this->tulis($p);
     }
 
     public function catatUnduhan(): void

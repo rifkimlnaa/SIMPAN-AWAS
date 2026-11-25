@@ -65,6 +65,15 @@
                 <input id="tanggal" name="tanggal" type="number" min="1" max="28" class="input" value="{{ old('tanggal', $p['tanggal']) }}">
             </div>
             <div class="sm:col-span-2">
+                <label class="label" for="tujuan">Hasil backup</label>
+                <select id="tujuan" name="tujuan" class="input">
+                    <option value="keduanya" @selected(old('tujuan', $p['tujuan']) === 'keduanya')>Unduh ke komputer + kirim ke Google Drive</option>
+                    <option value="unduh" @selected(old('tujuan', $p['tujuan']) === 'unduh')>Unduh ke komputer saja</option>
+                    <option value="drive" @selected(old('tujuan', $p['tujuan']) === 'drive')>Kirim ke Google Drive saja</option>
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Pilihan Google Drive hanya berjalan jika Drive sudah terhubung (lihat kotak Google Drive).</p>
+            </div>
+            <div class="sm:col-span-2">
                 <button type="submit" class="btn btn-primary"><i data-lucide="check" class="h-4 w-4"></i> Simpan jadwal</button>
             </div>
         </form>
@@ -76,7 +85,28 @@
         </dl>
     </section>
 
-    <section class="card self-start p-6">
+    <div class="space-y-6 self-start">
+    <section class="card p-6">
+        <h2 class="text-base font-semibold text-slate-900">Google Drive</h2>
+        @if (! $driveSiap)
+            <p class="mt-2 text-sm text-slate-500">Belum diatur. Isi <code>GOOGLE_DRIVE_CLIENT_ID</code>, <code>GOOGLE_DRIVE_CLIENT_SECRET</code>, dan <code>GOOGLE_DRIVE_REDIRECT_URI</code> di <code>.env</code>, lalu bersihkan cache.</p>
+            <p class="mt-2 text-xs text-slate-500">Redirect URI yang dipakai: <code>{{ url('/backup/google/callback') }}</code></p>
+        @elseif ($driveTerhubung)
+            <p class="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-700"><i data-lucide="check-circle-2" class="h-4 w-4"></i> Terhubung. Folder: SIMPAN-AWAS Backup</p>
+            @if ($p['drive_status'])
+                <p class="mt-2 text-xs {{ $p['drive_status'] === 'berhasil' ? 'text-slate-500' : 'text-red-600' }}">Kiriman terakhir ({{ \Carbon\Carbon::parse($p['drive_waktu'])->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB): {{ $p['drive_pesan'] }}</p>
+            @endif
+            <form method="POST" action="{{ route('backup.google.putus') }}" class="mt-3">
+                @csrf
+                <button type="submit" class="btn btn-light">Putuskan Google Drive</button>
+            </form>
+        @else
+            <p class="mt-2 text-sm text-slate-500">Belum terhubung. Backup akan dikirim ke folder "SIMPAN-AWAS Backup" di Google Drive-mu.</p>
+            <a href="{{ route('backup.google.hubungkan') }}" class="btn btn-primary mt-3"><i data-lucide="link" class="h-4 w-4"></i> Hubungkan Google Drive</a>
+        @endif
+    </section>
+
+    <section class="card p-6">
         <h2 class="text-base font-semibold text-slate-900">Isi file ZIP</h2>
         <ul class="mt-3 space-y-2 text-sm text-slate-600">
             <li class="flex gap-2"><i data-lucide="check" class="mt-0.5 h-4 w-4 text-emerald-600"></i> Database aplikasi</li>
@@ -85,6 +115,7 @@
         </ul>
         <p class="mt-4 text-xs text-slate-500">ZIP tidak dienkripsi dan berisi data asli. Simpan di tempat aman (komputer kantor atau Google Drive). File <code>.env</code> tidak ikut.</p>
     </section>
+    </div>
 </div>
 
 <section class="card mb-6 overflow-hidden" id="hosting-storage-panel" data-endpoint="{{ $storageUsageUrl }}" aria-live="polite">
