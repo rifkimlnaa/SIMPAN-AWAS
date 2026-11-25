@@ -12,6 +12,20 @@ use Throwable;
  */
 class CpanelStorageService
 {
+    /** Catatan teknis singkat (tanpa token) untuk membantu pemeriksaan bila cPanel menolak. */
+    private array $diag = [];
+
+    private function catat(string $nama, $response): void
+    {
+        $err = data_get($response->json(), 'result.errors.0') ?? data_get($response->json(), 'errors.0') ?? data_get($response->json(), 'result.messages.0');
+        $this->diag[] = $nama.': HTTP '.$response->status().($err ? ' - '.mb_substr(strip_tags((string) $err), 0, 120) : '');
+    }
+
+    private function diagTeks(): string
+    {
+        return $this->diag ? ' ['.implode('; ', $this->diag).']' : '';
+    }
+
     public function usage(bool $refresh = false): array
     {
         $baseUrl = rtrim((string) config('services.cpanel.base_url'), '/');
@@ -54,9 +68,10 @@ class CpanelStorageService
                 ->get($baseUrl . '/execute/StatsBar/get_stats', [
                     'display' => 'diskusage',
                 ]);
+            $this->catat('StatsBar', $response);
 
             if (! $response->successful()) {
-                return $this->unavailable('cPanel menolak permintaan statistik. Periksa hostname, API Token, dan izin akses token.');
+                return $this->unavailable('cPanel menolak permintaan statistik. Periksa hostname, API Token, dan izin akses token.'.$this->diagTeks());
             }
 
             $payload = $response->json();
@@ -67,7 +82,7 @@ class CpanelStorageService
             $result = data_get($payload, 'result', []);
             if (! is_array($result) || (int) data_get($result, 'status', 0) !== 1) {
                 return $this->fetchQuota($baseUrl, $username, $token)
-                    ?? $this->unavailable('cPanel belum dapat memberikan statistik disk untuk akun ini.');
+                    ?? $this->unavailable('cPanel belum dapat memberikan statistik disk untuk akun ini.'.$this->diagTeks());
             }
 
             $rows = data_get($result, 'data', []);
@@ -93,7 +108,7 @@ class CpanelStorageService
 
             if (! is_array($row)) {
                 return $this->fetchQuota($baseUrl, $username, $token)
-                    ?? $this->unavailable('Statistik Disk Space Usage tidak ditemukan pada respons cPanel.');
+                    ?? $this->unavailable('Statistik Disk Space Usage tidak ditemukan pada respons cPanel.'.$this->diagTeks());
             }
 
             $usedRaw = $row['count'] ?? $row['_count'] ?? null;
@@ -149,6 +164,7 @@ class CpanelStorageService
                 ->connectTimeout(5)
                 ->timeout(max(5, min(30, (int) config('services.cpanel.timeout', 12))))
                 ->get($baseUrl . '/execute/Quota/get_quota_info');
+            $this->catat('Quota', $response);
 
             $data = $response->successful() && (int) data_get($response->json(), 'status', 0) === 1
                 ? data_get($response->json(), 'data')
