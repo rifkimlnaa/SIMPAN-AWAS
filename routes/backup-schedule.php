@@ -1,10 +1,12 @@
 <?php
 
 use App\Services\BackupService;
+use App\Services\BackupPackageService;
+use App\Services\GoogleDriveBackupService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('backup:create {--type=daily}', function (BackupService $service): int {
+Artisan::command('backup:create {--type=daily}', function (BackupService $service, GoogleDriveBackupService $drive, BackupPackageService $packages): int {
     $type = (string) $this->option('type');
     if (! in_array($type, ['daily', 'weekly', 'monthly', 'manual', 'pre-restore'], true)) {
         $this->error('Jenis backup tidak dikenal.');
@@ -14,6 +16,15 @@ Artisan::command('backup:create {--type=daily}', function (BackupService $servic
     try {
         $backup = $service->create($type);
         $this->info('Backup berhasil: '.$backup->filename.' ('.$backup->sizeForHumans().')');
+        if (config('backup.google_drive.auto_upload', true) && $drive->isConnected()) {
+            try {
+                $uploaded = $drive->uploadBackup($backup, $packages);
+                $this->info('Salinan Google Drive berhasil: '.$uploaded['name']);
+            } catch (\Throwable $driveException) {
+                report($driveException);
+                $this->warn('Backup lokal aman, tetapi upload Google Drive gagal: '.$driveException->getMessage());
+            }
+        }
         return 0;
     } catch (\Throwable $exception) {
         report($exception);
@@ -33,6 +44,20 @@ Schedule::command('backup:create --type=weekly')->weeklyOn(0, '02:00')->timezone
 Schedule::command('backup:create --type=monthly')->monthlyOn(1, '03:00')->timezone('Asia/Jakarta')->withoutOverlapping();
 Schedule::command('backup:cleanup')->dailyAt('04:00')->timezone('Asia/Jakarta')->withoutOverlapping();
 
+
+Artisan::command('backup:import-zip {file} {--disk=}', function (BackupPackageService $packages, BackupService $service): int {
+    $file = (string) $this->argument('file');
+    $disk = $this->option('disk') ?: config('backup.disk', 'local');
+    try {
+        $backup = $packages->importZip($file, $service, (string) $disk);
+        $this->info('Backup berhasil didaftarkan: '.$backup->filename);
+        $this->comment('Selanjutnya pulihkan melalui menu Backup & Pemulihan atau backup:restore-file.');
+        return 0;
+    } catch (\Throwable $exception) {
+        $this->error('Impor ZIP gagal: '.$exception->getMessage());
+        return 1;
+    }
+})->purpose('Impor paket ZIP SIMPAN-AWAS dan daftarkan snapshot terenkripsi');
 
 Artisan::command('backup:restore-file {path} {--disk=}', function (BackupService $service): int {
     $disk = $this->option('disk') ?: config('backup.disk', 'local');

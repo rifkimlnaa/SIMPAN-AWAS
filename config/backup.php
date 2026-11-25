@@ -16,6 +16,19 @@ return [
     'mysql_binary' => env('BACKUP_MYSQL_BINARY', 'mysql'),
     'process_timeout' => (int) env('BACKUP_PROCESS_TIMEOUT', 1800),
     'chunk_size' => 1048576,
+    'max_import_bytes' => (int) env('BACKUP_MAX_IMPORT_BYTES', 2147483648),
+
+    // Opsional: API token cPanel untuk kuota akun yang akurat (bukan free space filesystem server).
+    'cpanel' => [
+        'api_url' => env('BACKUP_CPANEL_API_URL'), // contoh: https://server.domain.tld:2083
+        'username' => env('BACKUP_CPANEL_USERNAME'),
+        'api_token' => env('BACKUP_CPANEL_API_TOKEN'),
+    ],
+
+    'google_drive' => [
+        'auto_upload' => (bool) env('BACKUP_GOOGLE_DRIVE_AUTO_UPLOAD', true),
+        'upload_timeout' => (int) env('BACKUP_GOOGLE_DRIVE_UPLOAD_TIMEOUT', 1800),
+    ],
 
     'retention' => [
         'daily_days' => (int) env('BACKUP_KEEP_DAILY_DAYS', 7),
