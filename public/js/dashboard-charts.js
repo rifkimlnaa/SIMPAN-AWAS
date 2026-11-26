@@ -225,6 +225,17 @@
   }
 
   render();
-  var timer = 0;
-  window.addEventListener('resize', function () { clearTimeout(timer); timer = setTimeout(render, 120); });
+  // The body script is evaluated again on Turbo visits. Keep one resize listener and
+  // always point it at the most recently rendered dashboard instance.
+  window.__simpanDashboardRender = render;
+  if (!window.__simpanDashboardResizeBound) {
+    window.__simpanDashboardResizeBound = true;
+    var timer = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (typeof window.__simpanDashboardRender === 'function') window.__simpanDashboardRender();
+      }, 120);
+    });
+  }
 })();

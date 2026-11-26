@@ -15,20 +15,20 @@
     <div class="flex flex-wrap items-center gap-2">
         <a class="btn btn-light" href="{{ route('arsip.index', array_filter(['kategori' => $arsip->kategori->slug, 'jenis' => $arsip->isSederhana() ? null : $arsip->jenis_arsip])) }}"><i class="ti ti-arrow-left h-4 w-4"></i> Kembali</a>
         @if ($arsip->bisaCetakFormulir())
-            <a class="btn btn-primary" href="{{ route('arsip.formulir', $arsip) }}"><i class="ti ti-file-download h-4 w-4"></i> Formulir PDF</a>
+            <a class="btn btn-primary" data-turbo="false" href="{{ route('arsip.formulir', $arsip) }}"><i class="ti ti-file-download h-4 w-4"></i> Formulir PDF</a>
             @if (in_array($arsip->jenis_arsip, ['formulir_laporan', 'formulir_temuan'], true))
                 <a class="btn btn-light" href="#preview-formulir"><i class="ti ti-eye h-4 w-4"></i> Preview lengkap</a>
             @endif
-            <a class="btn btn-light" href="{{ route('arsip.formulir.word', $arsip) }}"><i class="ti ti-file-text h-4 w-4"></i> Formulir Word</a>
+            <a class="btn btn-light" data-turbo="false" href="{{ route('arsip.formulir.word', $arsip) }}"><i class="ti ti-file-text h-4 w-4"></i> Formulir Word</a>
         @endif
         @if ($arsip->punyaBerkas() && ! \App\Models\Arsip::punyaFotoBukti($arsip->jenis_arsip))
-            <a class="btn {{ $arsip->isSederhana() ? 'btn-primary' : 'btn-light' }}" href="{{ route('arsip.unduh', $arsip) }}"><i class="ti ti-download h-4 w-4"></i> {{ $arsip->isSederhana() ? 'Download berkas' : 'Berkas scan' }}</a>
+            <a class="btn {{ $arsip->isSederhana() ? 'btn-primary' : 'btn-light' }}" data-turbo="false" href="{{ route('arsip.unduh', $arsip) }}"><i class="ti ti-download h-4 w-4"></i> {{ $arsip->isSederhana() ? 'Download berkas' : 'Berkas scan' }}</a>
         @endif
         @can('update', $arsip)
             <a class="btn btn-light" href="{{ route('arsip.edit', $arsip) }}"><i class="ti ti-pencil h-4 w-4"></i> Edit</a>
         @endcan
         @can('delete', $arsip)
-            <form method="POST" action="{{ route('arsip.destroy', $arsip) }}" class="js-confirm-delete"
+            <form data-turbo="false" method="POST" action="{{ route('arsip.destroy', $arsip) }}" class="js-confirm-delete"
                   data-message="Arsip {{ $arsip->label() }} beserta berkasnya akan dihapus permanen.">
                 @csrf
                 @method('DELETE')

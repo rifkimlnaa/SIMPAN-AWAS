@@ -14,7 +14,7 @@
 
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ route('login.attempt') }}" data-once>
+                    <form data-turbo="false" method="POST" action="{{ route('login.attempt') }}" data-once>
                         @csrf
                         <div class="mb-4">
                             <label for="username" class="label">Username</label>

@@ -1,6 +1,6 @@
 {{-- Skrip halaman aplikasi: DataTables, jam 24 jam, saksi & baris dinamis, live preview berkas --}}
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" data-turbo-eval="false"></script>
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js" data-turbo-eval="false"></script>
 <script>
 (function () {
     'use strict';
@@ -349,90 +349,72 @@
 })();
 </script>
 
-<script>
+<script data-turbo-eval="false">
 (function () {
     'use strict';
 
-    // Gentle entrance for existing cards; no markup or data behavior is changed.
-    var main = document.querySelector('main');
-    if (main && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        main.classList.add('ui-content-enter');
-        main.querySelectorAll('.card').forEach(function (card, index) {
-            card.style.setProperty('--ui-enter-delay', Math.min(index * 42, 210) + 'ms');
+    // Satu runtime global: halaman diganti Turbo, tetapi document/window tetap hidup.
+    if (window.__simpanAwasTurboLifecycleBound) return;
+    window.__simpanAwasTurboLifecycleBound = true;
+
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function closeNavigationMenus() {
+        document.querySelectorAll('.tb-nav-item.open').forEach(function (item) {
+            item.classList.remove('open');
+            var button = item.querySelector(':scope > button');
+            if (button) button.setAttribute('aria-expanded', 'false');
         });
+        var nav = document.getElementById('tbNav');
+        var toggle = document.getElementById('tbNavToggle');
+        if (nav) nav.classList.remove('open');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
     }
 
-    // Reusable skeleton overlay for normal same-origin page navigation.
-    var loadingLayer = document.createElement('div');
-    loadingLayer.className = 'ui-page-loading';
-    loadingLayer.setAttribute('aria-hidden', 'true');
-    loadingLayer.innerHTML =
-        '<aside class="ui-page-loading__sidebar">' +
-            '<div class="ui-page-loading__brand ui-skeleton-shimmer"></div>' +
-            '<div class="ui-page-loading__nav">' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__nav-item ui-skeleton-shimmer"></div>' +
-            '</div>' +
-        '</aside>' +
-        '<section class="ui-page-loading__main">' +
-            '<header class="ui-page-loading__topbar">' +
-                '<div class="ui-page-loading__title ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__avatar ui-skeleton-shimmer"></div>' +
-            '</header>' +
-            '<div class="ui-page-loading__content">' +
-                '<div class="ui-page-loading__welcome ui-skeleton-shimmer"></div>' +
-                '<div class="ui-page-loading__stats">' +
-                    '<div class="ui-page-loading__stat ui-skeleton-shimmer"></div>' +
-                    '<div class="ui-page-loading__stat ui-skeleton-shimmer"></div>' +
-                    '<div class="ui-page-loading__stat ui-skeleton-shimmer"></div>' +
-                    '<div class="ui-page-loading__stat ui-skeleton-shimmer"></div>' +
-                '</div>' +
-                '<div class="ui-page-loading__columns">' +
-                    '<div class="ui-page-loading__panel ui-skeleton-shimmer"></div>' +
-                    '<div class="ui-page-loading__panel ui-skeleton-shimmer"></div>' +
-                '</div>' +
-            '</div>' +
-        '</section>';
-    document.body.appendChild(loadingLayer);
+    function cleanBeforeCache() {
+        closeNavigationMenus();
 
-    function showLoadingSkeleton() {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        loadingLayer.classList.add('is-visible');
+        // DataTables menambahkan wrapper dan state sendiri. Hancurkan sebelum snapshot
+        // atau penggantian body agar halaman berikutnya dapat menginisialisasikannya lagi.
+        var $ = window.jQuery;
+        if ($ && $.fn && $.fn.DataTable && $.fn.DataTable.isDataTable) {
+            document.querySelectorAll('table.js-datatable').forEach(function (table) {
+                if ($.fn.DataTable.isDataTable(table)) {
+                    $(table).DataTable().destroy();
+                }
+            });
+        }
     }
 
-    document.addEventListener('click', function (event) {
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        var link = event.target.closest && event.target.closest('a[href]');
-        if (!link || link.hasAttribute('download') || link.target === '_blank' || link.hasAttribute('data-no-page-skeleton')) return;
+    function animateCurrentPage() {
+        document.documentElement.classList.remove('tb-turbo-visiting');
+        if (reduceMotion) return;
+        var content = document.querySelector('.tb-page-body > .container-xl');
+        if (!content) return;
+        content.classList.remove('tb-turbo-enter');
+        // Restart a short entrance animation after each Turbo body replacement.
+        void content.offsetWidth;
+        content.classList.add('tb-turbo-enter');
+    }
 
-        var rawHref = link.getAttribute('href') || '';
-        if (!rawHref || rawHref.charAt(0) === '#' || /^javascript:/i.test(rawHref)) return;
-
-        var destination;
-        try { destination = new URL(link.href, window.location.href); } catch (error) { return; }
-        if (destination.origin !== window.location.origin) return;
-        if (destination.pathname === window.location.pathname && destination.search === window.location.search) return;
-        // File/form downloads and PDF previews should not display a page-navigation skeleton.
-        if (/\/(download|pdf)(\/|$)/i.test(destination.pathname) || /\.(pdf|zip|xlsx?|docx?|png|jpe?g|gif|webp|svg|mp4|mp3)$/i.test(destination.pathname)) return;
-
-        window.requestAnimationFrame(showLoadingSkeleton);
+    document.addEventListener('turbo:before-visit', function () {
+        document.documentElement.classList.add('tb-turbo-visiting');
+    });
+    document.addEventListener('turbo:before-cache', cleanBeforeCache);
+    document.addEventListener('turbo:before-render', cleanBeforeCache);
+    document.addEventListener('turbo:load', animateCurrentPage);
+    document.addEventListener('turbo:fetch-request-error', function () {
+        document.documentElement.classList.remove('tb-turbo-visiting');
+    });
+    document.addEventListener('turbo:submit-end', function () {
+        document.documentElement.classList.remove('tb-turbo-visiting');
     });
 
-    document.addEventListener('submit', function (event) {
-        var form = event.target;
-        if (event.defaultPrevented || !form || form.tagName !== 'FORM') return;
-        if (form.classList.contains('js-confirm-delete') || form.hasAttribute('data-no-page-skeleton')) return;
-        if (form.target && form.target !== '_self') return;
-        window.requestAnimationFrame(showLoadingSkeleton);
-    });
-
-    // Hide the skeleton when a page is restored from the browser back-forward cache.
-    window.addEventListener('pageshow', function () {
-        loadingLayer.classList.remove('is-visible');
-    });
+    // Fallback saat Turbo CDN tidak tersedia: normal document load tetap rapi.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', animateCurrentPage, { once: true });
+    } else {
+        animateCurrentPage();
+    }
 })();
 </script>

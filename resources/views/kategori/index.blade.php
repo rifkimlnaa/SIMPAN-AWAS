@@ -37,7 +37,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <a class="btn-icon" href="{{ route('kategori.edit', $k) }}" title="Edit" aria-label="Edit kategori"><i class="ti ti-pencil h-4 w-4"></i></a>
                                     @unless ($k->isUtama())
-                                        <form method="POST" action="{{ route('kategori.destroy', $k) }}" class="js-confirm-delete"
+                                        <form data-turbo="false" method="POST" action="{{ route('kategori.destroy', $k) }}" class="js-confirm-delete"
                                               data-message="Kategori {{ $k->nama }} akan dihapus permanen.">
                                             @csrf
                                             @method('DELETE')

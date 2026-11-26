@@ -41,7 +41,7 @@
                             <td>
                                 <div class="flex items-center gap-1.5">
                                     <a class="btn-icon" href="{{ route('petugas.edit', $p) }}" title="Edit" aria-label="Edit petugas"><i class="ti ti-pencil h-4 w-4"></i></a>
-                                    <form method="POST" action="{{ route('petugas.destroy', $p) }}" class="js-confirm-delete"
+                                    <form data-turbo="false" method="POST" action="{{ route('petugas.destroy', $p) }}" class="js-confirm-delete"
                                           data-message="Akun petugas {{ $p->name }} akan dihapus permanen.">
                                         @csrf
                                         @method('DELETE')

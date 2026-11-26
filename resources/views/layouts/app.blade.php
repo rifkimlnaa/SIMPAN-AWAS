@@ -3,6 +3,9 @@
 <head>
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css">
     @include('partials.head')
+    <meta name="view-transition" content="same-origin">
+    <meta name="turbo-cache-control" content="no-cache">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.23/dist/turbo.es2017-esm.min.js" data-turbo-track="reload"></script>
 
     <title>@yield('title', 'Dashboard') | {{ config('arsip.nama') }}</title>
 </head>
@@ -40,7 +43,7 @@
 
             <footer class="tb-footer">
                 <div class="container-xl">
-                    <span>{{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas x Magang UBSI</span>
+                    <span>{{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas</span>
                     <span>&copy; {{ date('Y') }}</span>
                 </div>
             </footer>
@@ -50,7 +53,7 @@
     @include('partials.scripts')
     @include('partials.scripts-app')
     @include('partials.backup-auto')
-    <script src="{{ asset('js/tabler-nav.js') }}?v={{ @filemtime(public_path('js/tabler-nav.js')) }}"></script>
+    <script src="{{ asset('js/tabler-nav.js') }}?v={{ @filemtime(public_path('js/tabler-nav.js')) }}" data-turbo-eval="false"></script>
     @stack('scripts')
 
 </body>

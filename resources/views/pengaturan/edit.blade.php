@@ -11,7 +11,7 @@
                 Unggah gambar atau video untuk latar penuh halaman login. Format JFIF/JPG, PNG, WEBP, MP4, dan WEBM didukung.
             </p>
 
-            <form method="POST" action="{{ route('pengaturan.latar') }}" enctype="multipart/form-data" data-once class="mt-5">
+            <form data-turbo="false" method="POST" action="{{ route('pengaturan.latar') }}" enctype="multipart/form-data" data-once class="mt-5">
                 @csrf
                 <label for="file" class="label">Pilih gambar atau video</label>
                 <input id="file" name="latar" type="file"
@@ -45,7 +45,7 @@
             </form>
 
             @if ($latarUrl)
-                <form method="POST" action="{{ route('pengaturan.latar.destroy') }}" class="js-confirm-delete mt-3 border-t border-slate-100 pt-4"
+                <form data-turbo="false" method="POST" action="{{ route('pengaturan.latar.destroy') }}" class="js-confirm-delete mt-3 border-t border-slate-100 pt-4"
                       data-message="Media latar akan dihapus dan halaman login kembali menggunakan latar bawaan.">
                     @csrf
                     @method('DELETE')

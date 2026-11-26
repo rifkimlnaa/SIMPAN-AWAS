@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold tracking-tight text-slate-900">Backup Media</h1>
         <p class="mt-1 max-w-2xl text-sm text-slate-500">Unduh seluruh isi web (database dan semua berkas arsip) menjadi satu file ZIP.</p>
     </div>
-    <form method="POST" action="{{ route('backup.unduh') }}">
+    <form data-turbo="false" method="POST" action="{{ route('backup.unduh') }}">
         @csrf
         <button type="submit" class="btn btn-primary"><i class="ti ti-download h-4 w-4"></i> Unduh Backup (ZIP)</button>
     </form>
@@ -36,7 +36,7 @@
         <h2 class="text-base font-semibold text-slate-900">Jadwal unduh otomatis</h2>
         <p class="mt-1 text-sm text-slate-500">Saat jadwal tiba, ZIP akan terunduh otomatis ketika admin membuka web ini di browser.</p>
 
-        <form method="POST" action="{{ route('backup.jadwal') }}" class="mt-5 grid gap-4 sm:grid-cols-2">
+        <form data-turbo="false" method="POST" action="{{ route('backup.jadwal') }}" class="mt-5 grid gap-4 sm:grid-cols-2">
             @csrf
             @method('PUT')
             <div>
@@ -96,13 +96,13 @@
             @if ($p['drive_status'])
                 <p class="mt-2 text-xs {{ $p['drive_status'] === 'berhasil' ? 'text-slate-500' : 'text-red-600' }}">Kiriman terakhir ({{ \Carbon\Carbon::parse($p['drive_waktu'])->timezone('Asia/Jakarta')->translatedFormat('d M Y, H:i') }} WIB): {{ $p['drive_pesan'] }}</p>
             @endif
-            <form method="POST" action="{{ route('backup.google.putus') }}" class="mt-3">
+            <form data-turbo="false" method="POST" action="{{ route('backup.google.putus') }}" class="mt-3">
                 @csrf
                 <button type="submit" class="btn btn-light">Putuskan Google Drive</button>
             </form>
         @else
             <p class="mt-2 text-sm text-slate-500">Belum terhubung. Backup akan dikirim ke folder "SIMPAN-AWAS Backup" di Google Drive-mu.</p>
-            <a href="{{ route('backup.google.hubungkan') }}" class="btn btn-primary mt-3"><i class="ti ti-link h-4 w-4"></i> Hubungkan Google Drive</a>
+            <a data-turbo="false" href="{{ route('backup.google.hubungkan') }}" class="btn btn-primary mt-3"><i class="ti ti-link h-4 w-4"></i> Hubungkan Google Drive</a>
         @endif
     </section>
 

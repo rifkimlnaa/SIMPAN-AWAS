@@ -4,7 +4,7 @@
 @section('title', $edit ? 'Edit Kategori' : 'Tambah Kategori')
 
 @section('content')
-<form method="POST" action="{{ $edit ? route('kategori.update', $kategori) : route('kategori.store') }}" data-once
+<form data-turbo="false" method="POST" action="{{ $edit ? route('kategori.update', $kategori) : route('kategori.store') }}" data-once
       class="card mx-auto max-w-xl space-y-5 p-6">
     @csrf
     @if ($edit)

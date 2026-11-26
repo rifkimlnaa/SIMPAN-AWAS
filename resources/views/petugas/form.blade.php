@@ -4,7 +4,7 @@
 @section('title', $edit ? 'Edit Petugas' : 'Tambah Petugas')
 
 @section('content')
-<form method="POST" action="{{ $edit ? route('petugas.update', $petugas) : route('petugas.store') }}" data-once autocomplete="off"
+<form data-turbo="false" method="POST" action="{{ $edit ? route('petugas.update', $petugas) : route('petugas.store') }}" data-once autocomplete="off"
       class="card mx-auto max-w-xl space-y-5 p-6">
     @csrf
     @if ($edit)

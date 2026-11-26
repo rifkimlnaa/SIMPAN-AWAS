@@ -1,153 +1,158 @@
-/* Menu atas: dropdown (klik, klik di luar, Esc) dan tombol menu pada layar kecil. */
+/* Navigasi Tabler + Turbo Drive.
+ * Semua event klik memakai delegation agar tetap berfungsi setelah Turbo mengganti <body>.
+ */
 (function () {
   'use strict';
 
-  var items = document.querySelectorAll('.tb-nav-item[data-dropdown]');
-  var toggle = document.getElementById('tbNavToggle');
-  var nav = document.getElementById('tbNav');
+  if (window.__simpanAwasTablerNavBound) return;
+  window.__simpanAwasTablerNavBound = true;
 
-  function closeAll(except) {
-    items.forEach(function (li) {
-      if (li === except) return;
-      li.classList.remove('open');
-      var b = li.querySelector('button');
-      if (b) b.setAttribute('aria-expanded', 'false');
-    });
-  }
-
-  items.forEach(function (li) {
-    var btn = li.querySelector('button');
-    if (!btn) return;
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = !li.classList.contains('open');
-      closeAll(li);
-      li.classList.toggle('open', open);
-      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-  });
-
-  document.addEventListener('click', function () { closeAll(null); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(null); });
-
-  if (toggle && nav) {
-    toggle.addEventListener('click', function () {
-      var open = !nav.classList.contains('open');
-      nav.classList.toggle('open', open);
-      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-  }
-})();
-
-/* Garis biru penggeser di bawah menu.
-   Disimpan sebagai nomor menu (bukan piksel) supaya tetap pas walau font berganti. Saat pindah halaman, garis
-   mulai dari menu tempat ia terakhir berada (menu yang diklik) dan baru meluncur setelah halaman baru tampil. */
-(function () {
-  'use strict';
-
-  var ul = document.querySelector('.tb-nav');
-  var ink = document.getElementById('tbInk');
-  if (!ul || !ink) return;
   var KEY = 'tbInkIdx';
   var desktop = window.matchMedia('(min-width: 992px)');
-  var items = Array.prototype.slice.call(ul.querySelectorAll(':scope > .tb-nav-item'));
-  var active = ul.querySelector(':scope > .tb-nav-item.active');
-  var activeIdx = items.indexOf(active);
-  var curIdx = activeIdx; // menu tempat garis berada sekarang
+  var resizeTimer = 0;
 
-  function box(li) {
-    var r = li.getBoundingClientRect(), u = ul.getBoundingClientRect();
-    return { x: r.left - u.left + 12, w: Math.max(0, r.width - 24) };
-  }
-  function put(idx) {
-    if (idx < 0 || !items[idx]) { ink.classList.remove('is-on'); curIdx = -1; return; }
-    var b = box(items[idx]);
-    ink.style.transform = 'translateX(' + b.x + 'px)';
-    ink.style.width = b.w + 'px';
-    ink.classList.add('is-on');
-    curIdx = idx;
-  }
-  function instant(fn) {
-    ink.classList.add('no-anim'); fn(); void ink.offsetWidth; ink.classList.remove('no-anim');
-  }
-  function remember() {
-    try { sessionStorage.setItem(KEY, String(curIdx)); } catch (e) { /* abaikan */ }
+  function navItems(ul) {
+    return Array.prototype.slice.call(ul.querySelectorAll(':scope > .tb-nav-item'));
   }
 
-  var from = -1;
-  try { from = parseInt(sessionStorage.getItem(KEY), 10); } catch (e) { from = -1; }
-  if (isNaN(from)) from = -1;
-
-  var started = false;
-  function settle() {
-    if (started) return;
-    started = true;
-    if (!desktop.matches) return;
-    if (from >= 0 && from !== activeIdx) put(activeIdx); // meluncur dari menu asal ke menu aktif
-    else instant(function () { put(activeIdx); });
-  }
-
-  if (desktop.matches) {
-    // Titik awal: menu asal (atau langsung menu aktif bila tak ada perpindahan). Tanpa animasi.
-    instant(function () { put(from >= 0 && from !== activeIdx && items[from] ? from : activeIdx); });
-
-    // Mulai meluncur setelah transisi halaman siap, sehingga gerakannya terlihat dan sejalan dengan isi halaman.
-    var go = function () { setTimeout(function () { requestAnimationFrame(settle); }, 60); };
-    window.addEventListener('pagereveal', function (e) {
-      if (e.viewTransition) e.viewTransition.ready.then(go, go); else go();
+  function closeAll(except) {
+    document.querySelectorAll('.tb-nav-item[data-dropdown]').forEach(function (item) {
+      if (item === except) return;
+      item.classList.remove('open');
+      var button = item.querySelector(':scope > button');
+      if (button) button.setAttribute('aria-expanded', 'false');
     });
-    setTimeout(go, 500); // cadangan bila peristiwa pagereveal tidak ada
   }
 
-  items.forEach(function (li, i) {
-    li.addEventListener('mouseenter', function () { if (desktop.matches && started) put(i); });
-    li.addEventListener('click', function () { if (desktop.matches) put(i); });
+  function setInk(index, immediate) {
+    var ul = document.querySelector('.tb-nav');
+    var ink = document.getElementById('tbInk');
+    if (!ul || !ink) return;
+    var items = navItems(ul);
+    if (!desktop.matches || index < 0 || !items[index]) {
+      ink.classList.remove('is-on');
+      return;
+    }
+
+    var rect = items[index].getBoundingClientRect();
+    var parent = ul.getBoundingClientRect();
+    var x = rect.left - parent.left + 12;
+    var width = Math.max(0, rect.width - 24);
+
+    if (immediate) ink.classList.add('no-anim');
+    ink.style.transform = 'translateX(' + x + 'px)';
+    ink.style.width = width + 'px';
+    ink.classList.add('is-on');
+    if (immediate) {
+      void ink.offsetWidth;
+      requestAnimationFrame(function () { ink.classList.remove('no-anim'); });
+    }
+  }
+
+  function activeIndex() {
+    var ul = document.querySelector('.tb-nav');
+    if (!ul) return -1;
+    var items = navItems(ul);
+    return items.findIndex(function (item) { return item.classList.contains('active'); });
+  }
+
+  function syncInkAfterVisit() {
+    var target = activeIndex();
+    var ul = document.querySelector('.tb-nav');
+    if (!ul) return;
+
+    if (!desktop.matches) {
+      setInk(-1, true);
+      return;
+    }
+
+    var from = -1;
+    try { from = parseInt(sessionStorage.getItem(KEY), 10); } catch (e) { from = -1; }
+    if (!Number.isInteger(from) || from < 0 || from >= navItems(ul).length) from = target;
+
+    setInk(from, true);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        setInk(target, false);
+        try { sessionStorage.setItem(KEY, String(target)); } catch (e) { /* abaikan */ }
+      });
+    });
+  }
+
+  document.addEventListener('click', function (event) {
+    var mobileToggle = event.target.closest && event.target.closest('#tbNavToggle');
+    if (mobileToggle) {
+      var nav = document.getElementById('tbNav');
+      if (!nav) return;
+      var open = !nav.classList.contains('open');
+      nav.classList.toggle('open', open);
+      mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      return;
+    }
+
+    var dropdownButton = event.target.closest && event.target.closest('.tb-nav-item[data-dropdown] > button');
+    if (dropdownButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      var item = dropdownButton.parentElement;
+      var openDropdown = !item.classList.contains('open');
+      closeAll(item);
+      item.classList.toggle('open', openDropdown);
+      dropdownButton.setAttribute('aria-expanded', openDropdown ? 'true' : 'false');
+      return;
+    }
+
+    if (!event.target.closest || !event.target.closest('.tb-nav')) {
+      closeAll(null);
+    }
+
+    var link = event.target.closest && event.target.closest('.tb-nav a[href]');
+    if (link) {
+      var parentItem = link.closest('.tb-nav-item');
+      var ul = link.closest('.tb-nav');
+      if (parentItem && ul) {
+        var index = navItems(ul).indexOf(parentItem);
+        if (index >= 0) {
+          setInk(index, false);
+          try { sessionStorage.setItem(KEY, String(index)); } catch (e) { /* abaikan */ }
+        }
+      }
+    }
   });
-  ul.addEventListener('mouseleave', function () { if (desktop.matches && started) put(activeIdx); });
 
-  // Simpan tempat garis berada tepat sebelum meninggalkan halaman.
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href]');
-    if (a && !a.closest('.tb-nav')) curIdx = activeIdx; // tautan di luar menu: garis tetap di menu aktif
-    remember();
-  }, true);
-  window.addEventListener('pagehide', remember);
-
-  // Font web mengubah lebar menu setelah termuat: pasang ulang tanpa animasi.
-  function refit() { if (desktop.matches && started) instant(function () { put(curIdx); }); }
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refit);
-  window.addEventListener('load', refit);
-  var t = 0;
-  window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(refit, 100); });
-})();
-
-/* Bilah muat tipis di atas layar saat berpindah halaman atau mengirim form. */
-(function () {
-  'use strict';
-
-  var bar = document.createElement('div');
-  bar.className = 'tb-loadbar';
-  bar.setAttribute('aria-hidden', 'true');
-  document.body.appendChild(bar);
-
-  var vt = 'onpagereveal' in window;
-  function go() { if (vt) return; bar.classList.remove('is-on'); void bar.offsetWidth; bar.classList.add('is-on'); }
-
-  document.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href]');
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    if (a.target && a.target !== '_self') return;
-    if (a.hasAttribute('download')) return;
-    var u;
-    try { u = new URL(a.href, location.href); } catch (err) { return; }
-    if (u.origin !== location.origin) return;
-    if (u.pathname === location.pathname && u.search === location.search) return;
-    if (/\/(unduh|formulir|download)/.test(u.pathname)) return; // unduhan berkas tidak memuat halaman baru
-    go();
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeAll(null);
   });
-  document.addEventListener('submit', function (e) {
-    var f = e.target;
-    if (f && !e.defaultPrevented && !(f.classList && f.classList.contains('js-confirm-delete'))) go();
+
+  document.addEventListener('mouseover', function (event) {
+    if (!desktop.matches) return;
+    var item = event.target.closest && event.target.closest('.tb-nav > .tb-nav-item');
+    if (!item || item.id === 'tbInk') return;
+    var ul = item.parentElement;
+    var index = navItems(ul).indexOf(item);
+    if (index >= 0) setInk(index, false);
   });
-  window.addEventListener('pageshow', function () { bar.classList.remove('is-on'); });
+
+  document.addEventListener('mouseout', function (event) {
+    if (!desktop.matches) return;
+    var ul = event.target.closest && event.target.closest('.tb-nav');
+    if (!ul || (event.relatedTarget && ul.contains(event.relatedTarget))) return;
+    setInk(activeIndex(), false);
+  });
+
+  document.addEventListener('turbo:before-cache', function () {
+    closeAll(null);
+    var nav = document.getElementById('tbNav');
+    var toggle = document.getElementById('tbNavToggle');
+    if (nav) nav.classList.remove('open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  });
+
+  document.addEventListener('turbo:load', syncInkAfterVisit);
+  document.addEventListener('DOMContentLoaded', syncInkAfterVisit, { once: true });
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { setInk(activeIndex(), true); }, 100);
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setInk(activeIndex(), true); });
 })();

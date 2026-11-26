@@ -17,7 +17,7 @@
     @endif
 </p>
 
-<form method="POST" action="{{ $edit ? route('arsip.update', $arsip) : route('arsip.store') }}" enctype="multipart/form-data" data-once>
+<form data-turbo="false" method="POST" action="{{ $edit ? route('arsip.update', $arsip) : route('arsip.store') }}" enctype="multipart/form-data" data-once>
     @csrf
     @if ($edit)
         @method('PUT')

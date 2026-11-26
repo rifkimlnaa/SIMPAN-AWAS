@@ -292,7 +292,7 @@ table.dataTable thead > tr > th.dt-orderable-asc:hover, table.dataTable thead > 
 .swal2-icon.swal2-success [class^=swal2-success-line] { background-color: var(--tb-green); }
 .swal2-icon.swal2-success .swal2-success-ring { border-color: rgba(47, 179, 68, .3); }
 .swal2-icon.swal2-success [class^=swal2-success-circular-line], .swal2-icon.swal2-success .swal2-success-fix { background: transparent !important; }
-.swal2-popup.swal2-toast { padding: .75rem 1rem !important; width: auto !important; max-width: 24rem; box-shadow: none !important; filter: none !important; }
+.swal2-popup.swal2-toast { padding: .75rem 1rem !important; width: auto !important; max-width: 24rem; }
 .swal2-popup.swal2-toast .swal2-title { display: none; }
 .swal2-popup.swal2-toast .swal2-html-container { margin: 0; padding: 0; color: var(--tb-text) !important; font-size: .875rem; }
 .swal2-popup.swal2-toast .swal2-icon { width: 1.75rem; height: 1.75rem; min-width: 1.75rem; margin: 0 .75rem 0 0; border-width: 0 !important; background: transparent !important; }
@@ -412,3 +412,22 @@ table.dataTable tbody tr { transition: background-color .12s var(--tb-ease); }
 @keyframes tb-vt-out { to { opacity: 0; } }
 @keyframes tb-vt-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
+
+/* ================= Turbo Drive: navigasi halus tanpa full page reload ================= */
+.turbo-progress-bar {
+  height: 2px !important;
+  background: var(--tb-primary) !important;
+  box-shadow: none !important;
+}
+.tb-page-body > .container-xl.tb-turbo-enter {
+  animation: tb-turbo-enter .26s var(--tb-ease) both;
+}
+@keyframes tb-turbo-enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tb-page-body > .container-xl.tb-turbo-enter { animation: none !important; }
+  .turbo-progress-bar { display: none !important; }
+}
+

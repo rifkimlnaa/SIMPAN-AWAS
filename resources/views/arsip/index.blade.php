@@ -87,17 +87,17 @@
                             <div class="flex items-center gap-1.5">
                                 <a class="btn-icon" href="{{ route('arsip.show', $a) }}" title="Lihat dan preview" aria-label="Lihat dan preview arsip"><i class="ti ti-eye h-4 w-4"></i></a>
                                 @if ($a->bisaCetakFormulir())
-                                    <a class="btn-icon" href="{{ route('arsip.formulir', $a) }}" title="Unduh Formulir (PDF)" aria-label="Unduh formulir PDF"><i class="ti ti-file-download h-4 w-4"></i></a>
-                                    <a class="btn-icon" href="{{ route('arsip.formulir.word', $a) }}" title="Unduh Formulir (Word)" aria-label="Unduh formulir Word"><i class="ti ti-file-text h-4 w-4"></i></a>
+                                    <a class="btn-icon" data-turbo="false" href="{{ route('arsip.formulir', $a) }}" title="Unduh Formulir (PDF)" aria-label="Unduh formulir PDF"><i class="ti ti-file-download h-4 w-4"></i></a>
+                                    <a class="btn-icon" data-turbo="false" href="{{ route('arsip.formulir.word', $a) }}" title="Unduh Formulir (Word)" aria-label="Unduh formulir Word"><i class="ti ti-file-text h-4 w-4"></i></a>
                                 @endif
                                 @if ($a->punyaBerkas())
-                                    <a class="btn-icon" href="{{ route('arsip.unduh', $a) }}" title="Download berkas" aria-label="Download berkas"><i class="ti ti-download h-4 w-4"></i></a>
+                                    <a class="btn-icon" data-turbo="false" href="{{ route('arsip.unduh', $a) }}" title="Download berkas" aria-label="Download berkas"><i class="ti ti-download h-4 w-4"></i></a>
                                 @endif
                                 @can('update', $a)
                                     <a class="btn-icon" href="{{ route('arsip.edit', $a) }}" title="Edit" aria-label="Edit arsip"><i class="ti ti-pencil h-4 w-4"></i></a>
                                 @endcan
                                 @can('delete', $a)
-                                    <form method="POST" action="{{ route('arsip.destroy', $a) }}" class="js-confirm-delete"
+                                    <form data-turbo="false" method="POST" action="{{ route('arsip.destroy', $a) }}" class="js-confirm-delete"
                                           data-message="Arsip {{ $a->label() }} beserta berkasnya akan dihapus permanen.">
                                         @csrf
                                         @method('DELETE')

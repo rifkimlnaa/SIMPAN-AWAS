@@ -10,7 +10,7 @@
         <div class="mt-4 flex flex-col gap-5 sm:flex-row sm:items-start">
             @include('partials.avatar', ['user' => $user, 'size' => 'lg'])
 
-            <form method="POST" action="{{ route('profil.foto') }}" enctype="multipart/form-data" data-once class="min-w-0 flex-1">
+            <form data-turbo="false" method="POST" action="{{ route('profil.foto') }}" enctype="multipart/form-data" data-once class="min-w-0 flex-1">
                 @csrf
                 <label for="foto" class="label">Unggah foto baru</label>
                 <input id="foto" name="foto" type="file" accept=".jpg,.jpeg,.png,.webp" required
@@ -21,7 +21,7 @@
             </form>
 
             @if ($user->foto)
-                <form method="POST" action="{{ route('profil.foto.destroy') }}" class="js-confirm-delete" data-message="Foto profil Anda akan dihapus.">
+                <form data-turbo="false" method="POST" action="{{ route('profil.foto.destroy') }}" class="js-confirm-delete" data-message="Foto profil Anda akan dihapus.">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger-ghost btn-sm"><i class="ti ti-trash h-4 w-4"></i> Hapus foto</button>
@@ -30,7 +30,7 @@
         </div>
     </section>
 
-    <form method="POST" action="{{ route('profil.update') }}" data-once class="card space-y-5 p-6">
+    <form data-turbo="false" method="POST" action="{{ route('profil.update') }}" data-once class="card space-y-5 p-6">
         @csrf
         @method('PUT')
         <div class="flex items-center justify-between">
@@ -58,7 +58,7 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ route('profil.password') }}" data-once class="card space-y-5 p-6">
+    <form data-turbo="false" method="POST" action="{{ route('profil.password') }}" data-once class="card space-y-5 p-6">
         @csrf
         @method('PUT')
         <h2 class="text-base font-semibold text-slate-900">Ganti password</h2>

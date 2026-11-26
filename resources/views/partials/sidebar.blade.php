@@ -21,7 +21,7 @@
                     @include('partials.avatar', ['user' => auth()->user(), 'size' => 'sm'])
                     <span class="tb-account-text"><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span>
                 </a>
-                <form method="POST" action="{{ route('logout') }}">@csrf<button class="tb-icon-btn" type="submit" title="Keluar" aria-label="Keluar"><i class="ti ti-logout"></i></button></form>
+                <form data-turbo="false" method="POST" action="{{ route('logout') }}">@csrf<button class="tb-icon-btn" type="submit" title="Keluar" aria-label="Keluar"><i class="ti ti-logout"></i></button></form>
             </div>
         </div>
     </div>
@@ -47,7 +47,7 @@
                         <ul class="tb-dropdown">
                             <li><a href="{{ route('arsip.index', ['kategori' => $k->slug]) }}">Semua jenis</a></li>
                             @foreach (\App\Models\Arsip::jenisUntukKategori($k->jenis) as $kunci => $j)
-                                <li><a href="{{ route('arsip.index', ['kategori' => $k->slug, 'jenis' => $kunci]) }}" class="{{ $aktif && request('jenis') === $kunci ? 'active' : '' }}">{{ $j['label'] }}{{ ! empty($j['singkat']) ? ' ('.$j['singkat'].')' : '' }}</a></li>
+                                <li><a href="{{ route('arsip.index', ['kategori' => $k->slug, 'jenis' => $kunci]) }}" class="{{ $aktif && request('jenis') === $kunci ? 'active' : '' }}">{{ $j['label'] }}</a></li>
                             @endforeach
                         </ul>
                     </li>
