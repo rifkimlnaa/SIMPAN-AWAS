@@ -40,7 +40,7 @@
 
             <footer class="tb-footer">
                 <div class="container-xl">
-                    <span>{{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas</span>
+                    <span>{{ config('arsip.nama') }} &middot; Bawaslu Kabupaten Banyumas x Magang UBSI</span>
                     <span>&copy; {{ date('Y') }}</span>
                 </div>
             </footer>
