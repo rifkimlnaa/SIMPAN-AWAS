@@ -47,7 +47,7 @@
                         <ul class="tb-dropdown">
                             <li><a href="{{ route('arsip.index', ['kategori' => $k->slug]) }}">Semua jenis</a></li>
                             @foreach (\App\Models\Arsip::jenisUntukKategori($k->jenis) as $kunci => $j)
-                                <li><a href="{{ route('arsip.index', ['kategori' => $k->slug, 'jenis' => $kunci]) }}" class="{{ $aktif && request('jenis') === $kunci ? 'active' : '' }}">{{ $j['label'] }}</a></li>
+                                <li><a href="{{ route('arsip.index', ['kategori' => $k->slug, 'jenis' => $kunci]) }}" class="{{ $aktif && request('jenis') === $kunci ? 'active' : '' }}">{{ $j['label'] }}{{ ! empty($j['singkat']) ? ' ('.$j['singkat'].')' : '' }}</a></li>
                             @endforeach
                         </ul>
                     </li>

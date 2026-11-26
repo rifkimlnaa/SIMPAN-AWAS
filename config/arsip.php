@@ -445,6 +445,15 @@ $config = [
                 'min' => 1, 'max' => 30,
                 'tambah' => 'Tambah dokumen',
                 'kosong' => 'Belum ada dokumen. Klik tombol di bawah untuk menambahkan.',
+                // Pilihan dokumen baku yang dibawa Pemohon (PSPP-03).
+                'pilihan' => [
+                    'surat_permohonan' => 'Surat permohonan penyelesaian sengketa proses Pemilu',
+                    'fotokopi_identitas' => 'Fotokopi identitas pemohon',
+                    'surat_kuasa' => 'Surat kuasa (jika dikuasakan)',
+                    'salinan_keputusan_kpu' => 'Salinan keputusan KPU yang disengketakan',
+                    'uraian_alasan' => 'Uraian alasan permohonan',
+                    'alat_bukti_pendukung' => 'Alat bukti pendukung (dokumen, surat, rekaman, atau bukti elektronik lainnya).',
+                ],
                 'kolom' => [
                     'jenis' => [
                         'label' => 'Jenis Dokumen', 'type' => 'textarea', 'rows' => 3, 'wide' => true,
